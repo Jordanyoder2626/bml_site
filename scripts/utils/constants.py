@@ -348,128 +348,85 @@ PLAYER_STATS_MAP = {
 
 TEAM_IDS = {
     # add new teams here
-    '{04E660A8-5B4E-4B6C-AD79-AF6820D2904A}': {
+    '{000ADC3F-14C0-418C-83B4-56B1D0919383}': {
         'active': True,
         'name': {
-            'first': 'Aditya',
-            'last': 'Parikh',
-            'display': 'Adit'
+            'first': 'Caden',
+            'last': 'Bucknerrrrr',
+            'display': 'Gustavo'
         }
     },
-
-    '{107907DD-E9E2-426A-81C1-33FB7AA6983B}': {
-        'active': False,
-        'name': {'first': 'Sharan',
-                 'last': 'Gottumukkala',
-                 'display': 'Shar'
-        }
-    },
-
-    '{127A0B03-FD89-4462-AE01-840A18124086}': {
+    '{089801F7-BA02-427B-9801-F7BA02B27B96}': {
         'active': True,
         'name': {
-            'first': 'Ayaz',
-            'last': 'Ghesani',
-            'display': 'Ayaz'
+            'first': 'Tripp',
+            'last': 'Winniford',
+            'display': 'Riceism'
         }
     },
-
-    '{15FA7955-FCA6-4E11-8D73-9EB30DD67D0B}': {
-        'active': False,
-        'name': {
-            'first': 'Vikram',
-            'last': 'Kesavabhotla',
-            'display': 'Vikr'
-        }
-    },
-
-    '{2EA590DD-55F5-41CF-A29F-AC67B612265A}': {
+    '{0D5E54B1-D7A2-4E3C-9E54-B1D7A26E3C78}': {
         'active': True,
         'name': {
-            'first': 'Varun',
-            'last': 'Viswanathan',
-            'display': 'Varu'
+            'first': 'Jordan',
+            'last': 'Yoder',
+            'display': 'The Warriors'
         }
     },
-
-    '{377D02F0-6C7C-4333-9D4B-DAB9EDD9A44D}': {
+    '{2B5B6A25-C8B8-45EB-9B6A-25C8B805EBAA}': {
         'active': True,
         'name': {
-            'first': 'Akshat',
-            'last': 'Rajan',
-            'display': 'Aksh'
+            'first': 'Chase',
+            'last': 'Yoder',
+            'display': 'Moose Knuckle'
         }
     },
-
-    '{89D51209-9763-4BC1-9512-0997634BC139}': {
-        'active': False,
-        'name': {
-            'first': 'Faizan',
-            'last': 'Khan',
-            'display': 'Faiz'
-        }
-    },
-
-    '{C152DDDA-D6A5-4B19-B4C8-3B60D3A5784F}': {
-        'active': False,
-        'name': {
-            'first': 'Harsh',
-            'last': 'Randhawa',
-            'display': 'Hars'
-        }
-    },
-
-    '{DFDE661C-852D-422F-99C9-0D06AD1B9B2D}': {
+    '{3E97B7E5-216F-42BC-9E34-E3DC4E002930}': {
         'active': True,
         'name': {
-            'first': 'Charles',
-            'last': 'Cai',
-            'display': 'Char'
+            'first': 'Luke',
+            'last': 'Burnette',
+            'display': 'Mighty Acorns'
         }
     },
-
-    '{E01C2393-2E6F-420B-9C23-932E6F720B61}': {
+    '{44E97B48-5469-4DA7-BA73-C431934CEB35}': {
         'active': True,
         'name': {
-            'first': 'Hirsh',
-            'last': 'Gupta',
-            'display': 'Hirs'
+            'first': 'thomas',
+            'last': 'mccartney',
+            'display': 'Grudens Grinders'
         }
     },
-
-    '{EB1CD420-9D9A-4649-873A-1A97DEFB5542}': {
+    '{81B6CF9E-2070-4C7D-A481-4399C5DFD344}': {
         'active': True,
         'name': {
-            'first': 'Nick',
-            'last': 'Shekar',
-            'display': 'Nick'
+            'first': 'Cade',
+            'last': 'Smitherman',
+            'display': 'Bijario'
         }
     },
-
-    '{FB094EC3-E4D2-4E81-AAA6-1D776B8259C7}': {
+    '{D62C1EF4-D8C6-4017-AC1E-F4D8C650177B}': {
         'active': True,
         'name': {
-            'first': 'Aaron',
-            'last': 'Srikantha',
-            'display': 'Aaro'
+            'first': 'Landry',
+            'last': 'Droupy',
+            'display': 'droupymagic'
         }
     },
-
-    '{95160076-FE63-41C0-9600-76FE63B1C0DD}': {
+    '{E6F4927B-0C19-425F-B492-7B0C19025FF4}': {
         'active': True,
         'name': {
-            'first': 'Arjun',
-            'last': 'Bains',
-            'display': 'Arju'
+            'first': 'Quinn',
+            'last': 'McDermott',
+            'display': 'Riceism'
         }
     },
-
-    '{52EF6954-9BFF-4A41-9617-1ECD3F5EEBAF}': {
+    '{FE034A7C-E6FD-4520-BB85-BA598ECB2746}': {
         'active': True,
         'name': {
-            'first': 'Aiden',
-            'last': 'Ghesani',
-            'display': 'Aide'
+            'first': 'Leighton',
+            'last': 'Archer',
+            'display': 'Kitty\'s Revenge'
         }
+    
     }
 }
