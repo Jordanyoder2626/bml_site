@@ -13,7 +13,7 @@ class Database:
                  values: tuple = None,
                  season: int = None,
                  week: int = None,
-                 use_ssh: bool = True):
+                 use_ssh: bool = False):
         """
         Initializes a Database object
 

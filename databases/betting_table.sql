@@ -1,4 +1,4 @@
-CREATE TABLE betting_table (
+CREATE TABLE IF NOT EXISTS betting_table (
     id VARCHAR(20) PRIMARY KEY,
     season INT,
     week INT,

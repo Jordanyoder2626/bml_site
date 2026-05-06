@@ -25,13 +25,40 @@ def get_all_time_standings(last_season):
         'team':'count',
         'season':lambda x: x.nunique()
     })
+    # table.columns = ['points', 'wins', 'th_wins', 'games', 'seasons']
+    # table['losses'] = pd.to_numeric(table.games - table.wins, errors='coerce')
+    # table['th_losses'] = pd.to_numeric(table.games - table.th_wins, errors='coerce')
+    # table['ov_wins'] = pd.to_numeric(table.wins + table.th_wins, errors='coerce')
+    # table['ov_losses'] = pd.to_numeric(table.losses + table.th_losses, errors='coerce')
+    # table['win_perc'] = round(table['ov_wins'] / (table['ov_wins'] + table['ov_losses']), 3).map('{:.3f}'.format)
+    # table['points'] = round(table.points, 2).map('{:,.2f}'.format)
     table.columns = ['points', 'wins', 'th_wins', 'games', 'seasons']
-    table['losses'] = table.games - table.wins
-    table['th_losses'] = table.games - table.th_wins
-    table['ov_wins'] = table.wins + table.th_wins
-    table['ov_losses'] = table.losses + table.th_losses
-    table['win_perc'] = round(table['ov_wins'] / (table['ov_wins'] + table['ov_losses']), 3).map('{:.3f}'.format)
-    table['points'] = round(table.points, 2).map('{:,.2f}'.format)
+    print(table.head())
+    print(table.dtypes)
+    print(table.isna().sum())
+    # convert to numeric FIRST
+    for col in ['points', 'wins', 'th_wins', 'games']:
+        table[col] = pd.to_numeric(table[col], errors='coerce')
+    print(table.head())
+    print(table.dtypes)
+    print(table.isna().sum())
+    # derived stats
+    table['losses'] = table['games'] - table['wins']
+    print(table.head())
+    print(table.dtypes)
+    print(table.isna().sum())
+    table['th_losses'] = table['games'] - table['th_wins']
+
+    table['ov_wins'] = table['wins'] + table['th_wins']
+    table['ov_losses'] = table['losses'] + table['th_losses']
+
+    # win percentage
+    denom = table['ov_wins'] + table['ov_losses']
+    table['win_perc'] = (table['ov_wins'] / denom).round(3)
+
+    # formatted points
+    table['points'] = table['points'].astype(float).round(2)
+    
     table['ov_wl'] = table.ov_wins.astype(int).astype(str) + '-' + table.ov_losses.astype(int).astype(str)
     table['m_wl'] = table.wins.astype(int).astype(str) + '-' + table.losses.astype(int).astype(str)
     table['th_wl'] = table.th_wins.astype(int).astype(str) + '-' + table.th_losses.astype(int).astype(str)
@@ -61,10 +88,13 @@ def get_all_time_standings(last_season):
          'playoffs': playoffs
          })
     playoffs_df = playoffs_df[['team', 'playoffs']].groupby('team').sum('playoffs').reset_index()
-    playoffs_2014 = pd.read_csv(r'tables/playoffs_2014_2017.csv')[['team', 'playoffs']]
-    playoffs_df_new = pd.concat([playoffs_df, playoffs_2014])
+    #playoffs_2014 = pd.read_csv(r'tables/playoffs_2014_2017.csv')[['team', 'playoffs']]
+    playoffs_df_new = playoffs_df
     playoffs_df_new = playoffs_df_new.groupby('team').sum('playoffs').reset_index()
-    all_time_standings = pd.merge(table, playoffs_df_new, on='team').iloc[:, [0, 1, 7, 2, 3, 4, 5, 6]]
+    #all_time_standings = pd.merge(table, playoffs_df_new, on='team').iloc[:, [0, 1, 7, 2, 3, 4, 5, 6]]
+    table.to_csv("output.csv", index=False)
+    all_time_standings = table.iloc[:, [0, 1, 7, 2, 3, 4, 5, 6]]
+
     return all_time_standings
 
 

@@ -1,4 +1,4 @@
-CREATE TABLE season_sim (
+CREATE TABLE IF NOT EXISTS season_sim (
     id VARCHAR(20) PRIMARY KEY,
     season INT,
     week INT,

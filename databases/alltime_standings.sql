@@ -1,4 +1,4 @@
-CREATE TABLE alltime_standings (
+CREATE TABLE IF NOT EXISTS alltime_standings (
     id INT PRIMARY KEY,
     team VARCHAR(100),
     seasons INT,

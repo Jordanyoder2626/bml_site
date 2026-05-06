@@ -1,4 +1,4 @@
-CREATE TABLE efficiency (
+CREATE TABLE IF NOT EXISTS efficiency (
     id VARCHAR(16) PRIMARY KEY,
     season INT,
     week INT,

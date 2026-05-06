@@ -1,4 +1,4 @@
-CREATE TABLE matchups (
+CREATE TABLE IF NOT EXISTS matchups (
     id VARCHAR(16) PRIMARY KEY,
     season INT,
     week INT,

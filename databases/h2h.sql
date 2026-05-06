@@ -1,4 +1,4 @@
-CREATE TABLE h2h (
+CREATE TABLE IF NOT EXISTS h2h (
     id VARCHAR(24) PRIMARY KEY,
     season INT,
     week INT,

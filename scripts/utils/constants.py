@@ -428,5 +428,25 @@ TEAM_IDS = {
             'display': 'Kitty\'s Revenge'
         }
     
+    },
+    '{552ABD2B-331C-46EF-AABD-2B331C06EF2D}': 
+    {
+        'active': False,
+        'name': {
+            'first': 'Chase',
+            'last': 'Yoder',
+            'display': 'Harpers Booty'  # or correct team name
+        }
+    },
+    '{C0284191-8F36-4640-BBA9-11596348CD1A}': 
+    {
+        'active': False,
+        'name': {
+            'first': 'Peyton',
+            'last': 'Yoder',
+            'display': '24th Nut'  # or correct team name
+        }
     }
+    
+    
 }

@@ -1,4 +1,4 @@
-CREATE TABLE records (
+CREATE TABLE IF NOT EXISTS records (
     id INT PRIMARY KEY,
     category VARCHAR(100),
     record VARCHAR(100),

@@ -1,4 +1,4 @@
-CREATE TABLE standings (
+CREATE TABLE IF NOT EXISTS standings (
     id VARCHAR(255) PRIMARY KEY,
     m_wins DECIMAL(4, 1),
     m_losses DECIMAL(4, 1),
