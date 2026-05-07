@@ -68,7 +68,7 @@ def get_all_time_standings(last_season):
     team_name = []
     lg_season = []
     playoffs = []
-    for season in range(2018, last_season + 1):
+    for season in range(2018, last_season):
         print(season)
         # get playoff appearances
         data = DataLoader(year=season)
@@ -128,7 +128,7 @@ def get_streaks_records():
         if col == 'overall_streaks' and fn == 'min':
             cat = 'Longest Winless Streak'
 
-        record = abs(int(df[col].unique()[0]))
+        record = abs(int(pd.to_numeric(df[col], errors='coerce').max()))
         holder = ', '.join(df.team.tolist())
         season = ', '.join([str(x) for x in df.season.tolist()])
         weeks = ', '.join([f'{x-record+1}-{x}' for x in df.week.tolist()])
@@ -138,17 +138,53 @@ def get_streaks_records():
     matchups = matchups.replace(0, -1)
     matchups['overall_result'] = matchups.matchup_result + matchups.tophalf_result
 
-    ## head-to-head streaks
-    mws = matchups.matchup_result.groupby([matchups.season, matchups.team]).transform(lambda x: x.diff().ne(0).cumsum())
-    matchups['matchup_streaks'] = matchups.matchup_result.groupby([matchups.season, matchups.team, mws]).cumsum()
+    result_map = {
+        "W": 1, "L": 0,
+        "WIN": 1, "LOSS": 0,
+        True: 1, False: 0
+    }
 
-    ## top half streaks
-    thws = matchups.tophalf_result.groupby([matchups.season, matchups.team]).transform(lambda x: x.diff().ne(0).cumsum())
-    matchups['tophalf_streaks'] = matchups.tophalf_result.groupby([matchups.season, matchups.team, thws]).cumsum()
+    matchups["matchup_result"] = matchups["matchup_result"].map(result_map).astype(int)
+    matchups["tophalf_result"] = matchups["tophalf_result"].map(result_map).astype(int)
+    matchups["overall_result"] = matchups["overall_result"].map(result_map).astype(int)
 
-    ## overall streaks
-    ows = matchups.overall_result.groupby([matchups.season, matchups.team]).transform(lambda x: x.diff().ne(0).cumsum())
-    matchups['overall_streaks'] = matchups.overall_result.groupby([matchups.season, matchups.team, ows]).cumsum() / 2
+    g = matchups.groupby(["season", "team"])
+
+    change = matchups["matchup_result"].ne(g["matchup_result"].shift()).cumsum()
+
+    matchups["matchup_streaks"] = (
+        matchups.groupby(["season", "team", change]).cumcount() + 1
+    )
+
+
+    g = matchups.groupby(["season", "team"])
+
+    change = matchups["tophalf_result"].ne(g["tophalf_result"].shift()).cumsum()
+
+    matchups["tophalf_streaks"] = (
+        matchups.groupby(["season", "team", change]).cumcount() + 1
+    )
+
+
+    g = matchups.groupby(["season", "team"])
+
+    change = matchups["overall_result"].ne(g["overall_result"].shift()).cumsum()
+
+    matchups["overall_streaks"] = (
+        matchups.groupby(["season", "team", change]).cumcount() + 1
+    )
+
+    # ## head-to-head streaks
+    # mws = matchups.matchup_result.groupby([matchups.season, matchups.team]).transform(lambda x: x.diff().ne(0).cumsum())
+    # matchups['matchup_streaks'] = matchups.matchup_result.groupby([matchups.season, matchups.team, mws]).cumsum()
+
+    # ## top half streaks
+    # thws = matchups.tophalf_result.groupby([matchups.season, matchups.team]).transform(lambda x: x.diff().ne(0).cumsum())
+    # matchups['tophalf_streaks'] = matchups.tophalf_result.groupby([matchups.season, matchups.team, thws]).cumsum()
+
+    # ## overall streaks
+    # ows = matchups.overall_result.groupby([matchups.season, matchups.team]).transform(lambda x: x.diff().ne(0).cumsum())
+    # matchups['overall_streaks'] = matchups.overall_result.groupby([matchups.season, matchups.team, ows]).cumsum() / 2
 
     rows.append(format_row(matchups, 'matchup_streaks', fn='max'))
     rows.append(format_row(matchups, 'matchup_streaks', fn='min'))

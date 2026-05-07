@@ -353,7 +353,7 @@ TEAM_IDS = {
         'name': {
             'first': 'Caden',
             'last': 'Bucknerrrrr',
-            'display': 'Gustavo'
+            'display': 'Caden'
         }
     },
     '{089801F7-BA02-427B-9801-F7BA02B27B96}': {
@@ -361,7 +361,7 @@ TEAM_IDS = {
         'name': {
             'first': 'Tripp',
             'last': 'Winniford',
-            'display': 'Riceism'
+            'display': 'Tripp'
         }
     },
     '{0D5E54B1-D7A2-4E3C-9E54-B1D7A26E3C78}': {
@@ -369,7 +369,7 @@ TEAM_IDS = {
         'name': {
             'first': 'Jordan',
             'last': 'Yoder',
-            'display': 'The Warriors'
+            'display': 'Jordan'
         }
     },
     '{2B5B6A25-C8B8-45EB-9B6A-25C8B805EBAA}': {
@@ -377,7 +377,7 @@ TEAM_IDS = {
         'name': {
             'first': 'Chase',
             'last': 'Yoder',
-            'display': 'Moose Knuckle'
+            'display': 'Chase'
         }
     },
     '{3E97B7E5-216F-42BC-9E34-E3DC4E002930}': {
@@ -385,7 +385,7 @@ TEAM_IDS = {
         'name': {
             'first': 'Luke',
             'last': 'Burnette',
-            'display': 'Mighty Acorns'
+            'display': 'Luke'
         }
     },
     '{44E97B48-5469-4DA7-BA73-C431934CEB35}': {
@@ -393,7 +393,7 @@ TEAM_IDS = {
         'name': {
             'first': 'thomas',
             'last': 'mccartney',
-            'display': 'Grudens Grinders'
+            'display': 'Rendle'
         }
     },
     '{81B6CF9E-2070-4C7D-A481-4399C5DFD344}': {
@@ -401,7 +401,7 @@ TEAM_IDS = {
         'name': {
             'first': 'Cade',
             'last': 'Smitherman',
-            'display': 'Bijario'
+            'display': 'Cade'
         }
     },
     '{D62C1EF4-D8C6-4017-AC1E-F4D8C650177B}': {
@@ -409,7 +409,7 @@ TEAM_IDS = {
         'name': {
             'first': 'Landry',
             'last': 'Droupy',
-            'display': 'droupymagic'
+            'display': 'Landry'
         }
     },
     '{E6F4927B-0C19-425F-B492-7B0C19025FF4}': {
@@ -417,7 +417,7 @@ TEAM_IDS = {
         'name': {
             'first': 'Quinn',
             'last': 'McDermott',
-            'display': 'Riceism'
+            'display': 'Quinn'
         }
     },
     '{FE034A7C-E6FD-4520-BB85-BA598ECB2746}': {
@@ -425,7 +425,7 @@ TEAM_IDS = {
         'name': {
             'first': 'Leighton',
             'last': 'Archer',
-            'display': 'Kitty\'s Revenge'
+            'display': 'Leighton'
         }
     
     },
@@ -435,7 +435,7 @@ TEAM_IDS = {
         'name': {
             'first': 'Chase',
             'last': 'Yoder',
-            'display': 'Harpers Booty'  # or correct team name
+            'display': 'Chase'  # or correct team name
         }
     },
     '{C0284191-8F36-4640-BBA9-11596348CD1A}': 
@@ -444,7 +444,7 @@ TEAM_IDS = {
         'name': {
             'first': 'Peyton',
             'last': 'Yoder',
-            'display': '24th Nut'  # or correct team name
+            'display': 'Peyton'  # or correct team name
         }
     }
     
