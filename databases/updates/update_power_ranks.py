@@ -125,66 +125,76 @@ def write_to_db(df: pd.DataFrame):
 
 def main():
 
-    data = DataLoader(year=constants.SEASON)
-    params = Params(data=data)
+    seasons = list(range(2018, 2026))
 
-    max_week = 14
+    for season in seasons:
 
-    for week in range(3, max_week):
-
-        print(f"Processing week {week}...")
+        data = DataLoader(year=season)
+        params = Params(data=data)
 
         # -----------------------------
-        # 1. previous week (safe)
+        # set max week per season
         # -----------------------------
-        prev_wk = fetch_prev_week(constants.SEASON, week)
+        if season == 2025:
+            max_week = 15
+        else:
+            max_week = 14
 
-        # -----------------------------
-        # 2. compute current week
-        # -----------------------------
-        current_df = build_week_df(params, constants.SEASON, week)
+        for week in range(1, max_week):
 
-        # -----------------------------
-        # 3. combine history
-        # -----------------------------
-        df_final = pd.concat(
-            [prev_wk, current_df],
-            ignore_index=True
-        )
+            print(f"Processing season {season}, week {week}...")
 
-        # -----------------------------
-        # 4. compute deltas safely
-        # -----------------------------
-        df_final = compute_deltas(df_final)
+            # -----------------------------
+            # 1. previous week (safe)
+            # -----------------------------
+            prev_wk = fetch_prev_week(season, week)
 
-        # -----------------------------
-        # 5. isolate current week
-        # -----------------------------
-        df_final = df_final[df_final.week == week]
+            # -----------------------------
+            # 2. compute current week
+            # -----------------------------
+            current_df = build_week_df(params, season, week)
 
-        # -----------------------------
-        # 6. enforce schema + clean NaNs
-        # -----------------------------
-        df_final = df_final.reindex(columns=PR_COLS.split(', ')).fillna(0)
+            # -----------------------------
+            # 3. combine history
+            # -----------------------------
+            df_final = pd.concat(
+                [prev_wk, current_df],
+                ignore_index=True
+            )
 
-        # -----------------------------
-        # 7. prevent duplicate inserts
-        # -----------------------------
-        try:
-            Database(
-                season=constants.SEASON,
-                week=week,
-                table=PR_TABLE
-            ).delete(where="week = %s", params=(week,))
-        except Exception:
-            pass
+            # -----------------------------
+            # 4. compute deltas safely
+            # -----------------------------
+            df_final = compute_deltas(df_final)
 
-        # -----------------------------
-        # 8. write
-        # -----------------------------
-        write_to_db(df_final)
+            # -----------------------------
+            # 5. isolate current week
+            # -----------------------------
+            df_final = df_final[df_final.week == week]
 
-        print(f"Committed week {week}")
+            # -----------------------------
+            # 6. enforce schema + clean NaNs
+            # -----------------------------
+            df_final = df_final.reindex(columns=PR_COLS.split(', ')).fillna(0)
+
+            # -----------------------------
+            # 7. prevent duplicate inserts
+            # -----------------------------
+            try:
+                Database(
+                    season=season,
+                    week=week,
+                    table=PR_TABLE
+                ).delete(where="week = %s", params=(week,))
+            except Exception:
+                pass
+
+            # -----------------------------
+            # 8. write
+            # -----------------------------
+            write_to_db(df_final)
+
+            print(f"Committed season {season}, week {week}")
 
 
 if __name__ == "__main__":
