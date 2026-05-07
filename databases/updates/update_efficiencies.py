@@ -39,8 +39,10 @@ EFF_COLS = constants.EFFICIENCY_COLUMNS
 
 
 def get_weeks_for_season(season: int):
-    if season == 2025:
+    if season >= 2025:
         return range(1, 15)
+    elif season <= 2020:
+        return range(1,13)
     return range(1, 14)
 
 

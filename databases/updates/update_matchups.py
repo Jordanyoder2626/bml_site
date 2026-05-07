@@ -29,35 +29,66 @@ from scripts.utils.database import Database
 from scripts.home.standings import Standings
 from scripts.utils import constants
 
-#constants.SEASON = 2018
-data = DataLoader(year=constants.SEASON)
-teams = Teams(data=data)
-params = Params(data=data)
-week=1
-standings = Standings(season=constants.SEASON, week=week)
+
+# ============================================================
+# SEASON WEEK RULES
+# ============================================================
+
+def get_max_week(season: int) -> int:
+    if season <= 2020:
+        return 12
+    elif season <= 2024:
+        return 13
+    else:
+        return 14
+
 
 matchups_table = 'matchups'
 matchup_cols = constants.MATCHUP_COLUMNS
 
-#for week in range(1, 14):
-standings = Standings(season=constants.SEASON, week=week)
 
-for t in teams.team_ids:
-    matchups = standings.get_matchup_results(week=week, team_id=t)
+# ============================================================
+# MAIN LOOP (ALL SEASONS)
+# ============================================================
 
-    if not matchups:
-        continue
+for season in range(2018, 2026):
 
-    m_vals = tuple(matchups.values())
-    print(m_vals)
+    print(f"\nProcessing season {season}")
 
-    db = Database(
-        data=matchups,
-        table=matchups_table,
-        columns=matchup_cols,
-        values=m_vals
-    )
-    db.commit_row()
+    data = DataLoader(year=season)
+    teams = Teams(data=data)
+    params = Params(data=data)
+
+    max_week = get_max_week(season)
+
+    for week in range(1, max_week + 1):
+
+        print(f"  Week {week}")
+
+        standings = Standings(season=season, week=week)
+
+        for t in teams.team_ids:
+
+            matchups = standings.get_matchup_results(
+                week=week,
+                team_id=t
+            )
+
+            if not matchups:
+                continue
+
+            m_vals = tuple(matchups.values())
+
+            print(m_vals)
+
+            db = Database(
+                data=matchups,
+                table=matchups_table,
+                columns=matchup_cols,
+                values=m_vals
+            )
+
+            db.commit_row()
 
 
 

@@ -3,7 +3,7 @@ from scripts.utils.database import Database
 from scripts.utils import constants
 
 
-season=constants.SEASON+1
+season=constants.SEASON
 standings = get_all_time_standings(season)
 standings = standings.reset_index(drop=True).reset_index().rename(columns={'index': 'id'})
 

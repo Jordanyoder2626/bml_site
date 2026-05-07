@@ -137,6 +137,8 @@ def main():
         # -----------------------------
         if season == 2025:
             max_week = 15
+        elif season <= 2020:
+            max_week = 13
         else:
             max_week = 14
 

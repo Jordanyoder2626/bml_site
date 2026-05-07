@@ -15,8 +15,13 @@ for season in seasons:
     params = Params(data)
     week = params.as_of_week
     teams = Teams(data)
-
-    for week in range(1, 14):
+    if season == 2025:
+        max_week = 15
+    elif season <= 2020:
+        max_week = 13
+    else:
+        max_week = 14
+    for week in range(1, max_week):
         switcher = schedule_switcher(teams=teams, season=season, week=week)
         sch_sw_table = 'schedule_switcher'
         sch_sw_cols = constants.SCHEDULE_SWITCH_COLUMNS
