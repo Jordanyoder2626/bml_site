@@ -8,7 +8,7 @@ class Params:
         self.league_size = settings['settings']['size']
         self.roster_size = sum(settings['settings']['rosterSettings']['lineupSlotCounts'].values())
         self.regular_season_end = settings['settings']['scheduleSettings']['matchupPeriodCount']
-        self.current_week = 12#settings['scoringPeriodId']
+        self.current_week = 3#settings['scoringPeriodId']
         self.as_of_week = self.current_week-1  # just finished
         # self.as_of_week = 0 if self.current_week-1 < 0 else self.current_week-1  # just finished
         self.playoff_teams = settings['settings']['scheduleSettings']['playoffTeamCount']
