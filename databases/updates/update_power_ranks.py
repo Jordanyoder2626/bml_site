@@ -46,7 +46,7 @@ from scripts.utils import constants
 
 
 PR_TABLE = 'power_ranks'
-PR_COLS = constants.POWER_RANK_COLUMNS.split(', ')
+PR_COLS = constants.POWER_RANK_COLUMNS
 
 
 def fetch_prev_week(season: int, week: int) -> pd.DataFrame:
@@ -55,7 +55,7 @@ def fetch_prev_week(season: int, week: int) -> pd.DataFrame:
     Returns empty DF if none exists (prevents Week 1 crash).
     """
     if week <= 1:
-        return pd.DataFrame(columns=PR_COLS)
+        return pd.DataFrame(columns=PR_COLS.split(', '))
 
     try:
         return Database(
@@ -64,7 +64,7 @@ def fetch_prev_week(season: int, week: int) -> pd.DataFrame:
             table=PR_TABLE
         ).retrieve_data(how='week')
     except Exception:
-        return pd.DataFrame(columns=PR_COLS)
+        return pd.DataFrame(columns=PR_COLS.split(', '))
 
 
 def build_week_df(params, season: int, week: int) -> pd.DataFrame:
@@ -119,7 +119,7 @@ def write_to_db(df: pd.DataFrame):
     db = Database(table=PR_TABLE, columns=PR_COLS)
 
     for _, row in df.iterrows():
-        db.values = tuple(row[col] for col in PR_COLS)
+        db.values = tuple(row[col] for col in PR_COLS.split(', '))
         db.commit_row()
 
 
@@ -128,9 +128,9 @@ def main():
     data = DataLoader(year=constants.SEASON)
     params = Params(data=data)
 
-    max_week = params.current_week
+    max_week = 14
 
-    for week in range(1, max_week):
+    for week in range(3, max_week):
 
         print(f"Processing week {week}...")
 
@@ -165,7 +165,7 @@ def main():
         # -----------------------------
         # 6. enforce schema + clean NaNs
         # -----------------------------
-        df_final = df_final.reindex(columns=PR_COLS).fillna(0)
+        df_final = df_final.reindex(columns=PR_COLS.split(', ')).fillna(0)
 
         # -----------------------------
         # 7. prevent duplicate inserts
