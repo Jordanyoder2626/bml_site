@@ -25,6 +25,47 @@ def _safe_int(val, default=0):
         return default
 
 
+def _get_matchups_db():
+    matchups = Database(table='matchups').retrieve_data(how='all')
+
+    if matchups is None or len(matchups) == 0:
+        return pd.DataFrame()
+
+    matchups = matchups.copy()
+
+    for col in ['season', 'week', 'score', 'opponent_score', 'matchup_result', 'tophalf_result']:
+        if col in matchups:
+            matchups[col] = pd.to_numeric(matchups[col], errors='coerce')
+
+    matchups = matchups.dropna(subset=['season', 'week', 'team', 'score'])
+    matchups['season'] = matchups['season'].astype(int)
+    matchups['week'] = matchups['week'].astype(int)
+
+    return matchups.sort_values(['season', 'team', 'week']).reset_index(drop=True)
+
+
+def _join_values(series):
+    return ", ".join(series.dropna().astype(str).drop_duplicates().tolist())
+
+
+def _format_record(value):
+    if pd.isna(value):
+        return ''
+
+    value = float(value)
+    return str(int(value)) if value.is_integer() else f'{value:.2f}'
+
+
+def _record_rows(df, category, record_col, holder_col='team'):
+    return [
+        category,
+        _format_record(df[record_col].iloc[0]),
+        _join_values(df[holder_col]),
+        _join_values(df['season']),
+        _join_values(df['week'])
+    ]
+
+
 # ============================================================
 # ALL TIME STANDINGS
 # ============================================================
@@ -133,53 +174,60 @@ def get_streaks_records():
 
     rows = []
 
-    matchups = Database(table='matchups').retrieve_data(how='all')
+    matchups = _get_matchups_db()
 
     if matchups is None or len(matchups) == 0:
         return []
 
-    matchups["matchup_result"] = (
-        matchups["matchup_result"]
-        .map({"W": 1, "L": 0, "WIN": 1, "LOSS": 0, True: 1, False: 0})
-        .fillna(0)
-        .astype(int)
-    )
+    matchups = matchups.dropna(subset=['matchup_result']).copy()
+    matchups["matchup_result"] = matchups["matchup_result"].astype(int)
 
     g = matchups.groupby(["season", "team"])
+    matchups["new_streak"] = matchups["matchup_result"].ne(g["matchup_result"].shift())
+    matchups["streak_group"] = matchups.groupby(["season", "team"])["new_streak"].cumsum()
+    matchups["matchup_streak"] = (
+        matchups
+        .groupby(["season", "team", "streak_group"])
+        .cumcount() + 1
+    )
 
-    change = matchups["matchup_result"].ne(g["matchup_result"].shift()).cumsum()
+    streaks = (
+        matchups
+        .groupby(["season", "team", "streak_group", "matchup_result"], as_index=False)
+        .agg(
+            record=("matchup_streak", "max"),
+            start_week=("week", "min"),
+            end_week=("week", "max")
+        )
+    )
+    streaks["week_range"] = (
+        streaks["start_week"].astype(int).astype(str)
+        + "-"
+        + streaks["end_week"].astype(int).astype(str)
+    )
 
-    matchups["matchup_streaks"] = (
-        matchups.groupby(["season", "team", change]).cumcount() + 1
-    ).fillna(0)
+    def format_row(df, result, cat):
 
-    def format_row(df, col, fn):
-
-        if len(df) == 0:
-            return None
-
-        if fn == "max":
-            sub = df[df[col] == df[col].max()]
-            cat = "Longest Winning Streak"
-        else:
-            sub = df[df[col] == df[col].min()]
-            cat = "Longest Losing Streak"
-
+        sub = df[df["matchup_result"] == result]
         if len(sub) == 0:
             return None
 
-        record = _safe_int(pd.to_numeric(sub[col], errors='coerce').max(), 0)
+        sub = sub[sub["record"] == sub["record"].max()]
+        if len(sub) == 0:
+            return None
+
+        record = _safe_int(pd.to_numeric(sub["record"], errors='coerce').max(), 0)
 
         return [
             cat,
             record,
-            ", ".join(sub.team.astype(str).tolist()),
-            ", ".join(sub.season.astype(str).tolist()),
-            ", ".join(sub.week.astype(str).tolist())
+            _join_values(sub.team),
+            _join_values(sub.season),
+            _join_values(sub.week_range)
         ]
 
-    max_row = format_row(matchups, "matchup_streaks", "max")
-    min_row = format_row(matchups, "matchup_streaks", "min")
+    max_row = format_row(streaks, 1, "Longest Winning Streak")
+    min_row = format_row(streaks, 0, "Longest Losing Streak")
 
     if max_row:
         rows.append(max_row)
@@ -195,94 +243,93 @@ def get_streaks_records():
 
 def get_standings_records(last_season):
 
-    df = pd.DataFrame()
+    matchups = _get_matchups_db()
 
-    for s in range(2018, last_season + 1):
+    if matchups is None or len(matchups) == 0:
+        return pd.DataFrame(columns=['category','record','holder','season','week'])
 
-        data = DataLoader(year=s)
-        params = Params(data)
+    matchups = matchups[matchups.season <= last_season].copy()
+    matchups = matchups.dropna(subset=['matchup_result'])
 
-        standings = Standings(season=s, week=params.regular_season_end + 1)
-        standings_df = standings.format_standings()
-
-        standings_df = standings_df[['team', 'matchup', 'total_points']]
-
-        standings_df['m_wins'] = standings_df.matchup.str.split('-').str[0].astype("Int64").fillna(0)
-        standings_df['m_losses'] = standings_df.matchup.str.split('-').str[1].astype("Int64").fillna(0)
-
-        standings_df['ppg'] = (
-            standings_df.total_points / max(params.regular_season_end, 1)
-        ).round(2)
-
-        standings_df['season'] = s
-
-        df = pd.concat([df, standings_df])
+    df = (
+        matchups
+        .groupby(['season', 'team'], as_index=False)
+        .agg(
+            m_wins=('matchup_result', 'sum'),
+            games=('matchup_result', 'count'),
+            total_points=('score', 'sum'),
+            week=('week', 'max')
+        )
+    )
+    df['m_losses'] = df['games'] - df['m_wins']
+    df['ppg'] = (df['total_points'] / df['games'].replace(0, 1)).round(2)
 
     if len(df) == 0:
         return pd.DataFrame(columns=['category','record','holder','season','week'])
 
-    def safe_max(col):
-        if col not in df or df[col].isna().all():
-            return 0
-        return df[col].max()
-
-    most_m_wins = df[df.m_wins == safe_max("m_wins")]
-    most_m_losses = df[df.m_losses == safe_max("m_losses")]
-    most_ppg = df[df.ppg == safe_max("ppg")]
+    most_m_wins = df[df.m_wins == df.m_wins.max()]
+    most_m_losses = df[df.m_losses == df.m_losses.max()]
+    most_ppg = df[df.ppg == df.ppg.max()]
     least_ppg = df[df.ppg == df.ppg.min()]
 
     return pd.DataFrame([
-        ('Most Wins', str(safe_max("m_wins")), ", ".join(most_m_wins.team.astype(str)), "", ""),
-        ('Most Losses', str(safe_max("m_losses")), ", ".join(most_m_losses.team.astype(str)), "", ""),
-        ('Highest PPG', str(safe_max("ppg")), ", ".join(most_ppg.team.astype(str)), "", ""),
-        ('Lowest PPG', str(df.ppg.min()), ", ".join(least_ppg.team.astype(str)), "", "")
+        _record_rows(most_m_wins, 'Most Wins', 'm_wins'),
+        _record_rows(most_m_losses, 'Most Losses', 'm_losses'),
+        _record_rows(most_ppg, 'Highest PPG', 'ppg'),
+        _record_rows(least_ppg, 'Lowest PPG', 'ppg')
     ], columns=['category','record','holder','season','week'])
 
 def get_matchup_records(last_season):
     try:
-        most_matchup_points = -999
-        least_matchup_points = 999
-        closest_matchup = 999
-        biggest_blowout = -999
+        matchups = _get_matchups_db()
 
-        rows = []
+        if matchups is None or matchups.empty:
+            return pd.DataFrame(columns=['category','record','holder','season','week'])
 
-        for s in range(2018, last_season + 1):
-            data = DataLoader(year=s)
-            params = Params(data)
-            teams = Teams(data)
-            regular_season_end = params.regular_season_end
+        matchups = matchups[
+            (matchups.season <= last_season)
+            & matchups.opponent.notna()
+            & matchups.opponent_score.notna()
+        ].copy()
 
-            matchups = data.matchups()
+        if matchups.empty:
+            return pd.DataFrame(columns=['category','record','holder','season','week'])
 
-            for m in matchups.get('schedule', []):
-                week = m.get('matchupPeriodId', 0)
+        matchups['pair_key'] = matchups.apply(
+            lambda x: "|".join(sorted([str(x.team), str(x.opponent)])),
+            axis=1
+        )
+        matchups = matchups.drop_duplicates(['season', 'week', 'pair_key'])
+        matchups['total_points'] = (matchups.score + matchups.opponent_score).round(2)
+        matchups['margin'] = (matchups.score - matchups.opponent_score).abs().round(2)
+        matchups['holder'] = matchups.apply(
+            lambda x: f'{x.team} vs {x.opponent}',
+            axis=1
+        )
 
-                if week > regular_season_end:
-                    continue
+        def category_row(category, col, highest=True):
+            target = matchups[col].max() if highest else matchups[col].min()
+            sub = matchups[matchups[col] == target]
 
-                tm1_score = m['away'].get('totalPoints', 0)
-                tm2_score = m['home'].get('totalPoints', 0)
+            if category == 'Biggest Blowout':
+                sub = sub.copy()
+                sub['holder'] = sub.apply(
+                    lambda x: (
+                        f'{x.team} over {x.opponent}'
+                        if x.score >= x.opponent_score
+                        else f'{x.opponent} over {x.team}'
+                    ),
+                    axis=1
+                )
 
-                total = round(tm1_score + tm2_score, 2)
-                diff = abs(round(tm1_score - tm2_score, 2))
+            return _record_rows(sub, category, col, holder_col='holder')
 
-                if total > most_matchup_points:
-                    most_matchup_points = total
-                    rows.append(['Most Matchup Points', total, '', s, week])
-
-                if total < least_matchup_points:
-                    least_matchup_points = total
-                    rows.append(['Fewest Matchup Points', total, '', s, week])
-
-                if diff < closest_matchup:
-                    closest_matchup = diff
-                    rows.append(['Closest Matchup', diff, '', s, week])
-
-                if diff > biggest_blowout:
-                    biggest_blowout = diff
-                    rows.append(['Biggest Blowout', diff, '', s, week])
-
+        rows = [
+            category_row('Most Matchup Points', 'total_points', highest=True),
+            category_row('Fewest Matchup Points', 'total_points', highest=False),
+            category_row('Closest Matchup', 'margin', highest=False),
+            category_row('Biggest Blowout', 'margin', highest=True)
+        ]
         return pd.DataFrame(rows, columns=['category','record','holder','season','week'])
 
     except Exception as e:
@@ -293,19 +340,33 @@ def get_matchup_records(last_season):
 
 def get_tophalf_records():
     try:
-        matchups = Database(table='matchups').retrieve_data(how='all')
+        matchups = _get_matchups_db()
 
         if matchups is None or matchups.empty:
-            return pd.DataFrame([['No Data', 0, '', 0, 0]],
-                               columns=['category','record','holder','season','week'])
+            return pd.DataFrame(columns=['category','record','holder','season','week'])
 
-        matchups = matchups[['season','week','team','score']]
+        matchups = matchups[['season','week','team','score']].copy()
 
         matchups['med'] = matchups.groupby(['season','week'])['score'].transform('median')
-        matchups['diff'] = abs(matchups['score'] - matchups['med'])
+        matchups['tophalf_win'] = (matchups['score'] > matchups['med']).astype(int)
+
+        records = (
+            matchups
+            .groupby(['season', 'team'], as_index=False)
+            .agg(
+                th_wins=('tophalf_win', 'sum'),
+                games=('tophalf_win', 'count'),
+                week=('week', 'max')
+            )
+        )
+        records['th_losses'] = records['games'] - records['th_wins']
+
+        most_wins = records[records.th_wins == records.th_wins.max()]
+        most_losses = records[records.th_losses == records.th_losses.max()]
 
         return pd.DataFrame([
-            ['TopHalf Placeholder', 0, '', 0, 0]
+            _record_rows(most_wins, 'Most Top Half Wins', 'th_wins'),
+            _record_rows(most_losses, 'Most Top Half Losses', 'th_losses')
         ], columns=['category','record','holder','season','week'])
 
     except Exception as e:

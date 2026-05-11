@@ -2,10 +2,7 @@ from scripts.records.initialize import (
     get_standings_records,
     get_streaks_records,
     get_matchup_records,
-    get_tophalf_records,
-    get_per_stat_records,
-    get_stat_group_records,
-    get_most_points_by_position
+    get_tophalf_records
 )
 
 from scripts.utils.database import Database
@@ -28,18 +25,12 @@ longest_streaks = pd.DataFrame(
 
 matchup_recs = get_matchup_records(season)
 tophalf_recs = get_tophalf_records()
-per_stat_recs = get_per_stat_records(season)
-stat_group_records = get_stat_group_records(season)
-points_by_position = get_most_points_by_position(season)
 
 records = pd.concat([
     standings_recs,
     longest_streaks,
     matchup_recs,
-    tophalf_recs,
-    per_stat_recs,
-    stat_group_records,
-    points_by_position
+    tophalf_recs
 ], ignore_index=True)
 
 # ============================================================
@@ -49,9 +40,10 @@ records = pd.concat([
 # Replace NaN / empty strings
 records = records.fillna('')
 
-# Ensure correct dtypes
-records['season'] = pd.to_numeric(records['season'], errors='coerce').fillna(0).astype(int)
-records['week'] = pd.to_numeric(records['week'], errors='coerce').fillna(0).astype(int)
+# Keep season/week as display strings because tied records can span
+# multiple seasons or weeks (for example "2024, 2025").
+records['season'] = records['season'].astype(str)
+records['week'] = records['week'].astype(str)
 
 # Clamp holder length (fix MySQL 1406 error)
 records['holder'] = records['holder'].astype(str).str.slice(0, 100)
@@ -103,6 +95,8 @@ db = Database()
 
 with db as conn:
     cursor = conn.cursor()
+
+    cursor.execute(f"DELETE FROM {records_table};")
 
     for _, row in records.iterrows():
         values = tuple(row[col] for col in records_cols)
