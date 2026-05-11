@@ -97,13 +97,16 @@ body {
 
 
 /* format standings table to show playoff cutoffs */
-.standings tr:nth-child(2){
-  border-bottom: 2px dashed #909090;
+.standings tbody tr.division-east {
+  background-color: rgba(14, 176, 75, 0.12);
 }
 
-.standings tr:nth-child(6){
-  border-top: 2px dashed #909090;
-  border-bottom: 2px solid #909090;
+.standings tbody tr.division-west {
+  background-color: rgba(13, 22, 65, 0.11);
+}
+
+.standings tbody tr:nth-child(5){
+  border-bottom: 3px solid #606060;
 }
 /* end format standings */
 

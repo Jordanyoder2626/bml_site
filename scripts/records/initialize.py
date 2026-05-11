@@ -136,7 +136,7 @@ def get_all_time_standings(last_season):
         data = DataLoader(year=season)
         teams = Teams(data=data)
 
-        playoff_cutoff = 4 if season <= 2024 else 5
+        playoff_cutoff = 5
 
         team_data = data.teams()
 
@@ -311,16 +311,35 @@ def get_matchup_records(last_season):
             target = matchups[col].max() if highest else matchups[col].min()
             sub = matchups[matchups[col] == target]
 
-            if category == 'Biggest Blowout':
+            if category in [
+                'Most Matchup Points',
+                'Fewest Matchup Points',
+                'Closest Matchup',
+                'Biggest Blowout'
+            ]:
                 sub = sub.copy()
-                sub['holder'] = sub.apply(
-                    lambda x: (
-                        f'{x.team} over {x.opponent}'
-                        if x.score >= x.opponent_score
-                        else f'{x.opponent} over {x.team}'
-                    ),
-                    axis=1
-                )
+
+                if category in ['Most Matchup Points', 'Fewest Matchup Points', 'Closest Matchup']:
+                    sub['holder'] = sub.apply(
+                        lambda x: (
+                            f'{x.team} vs {x.opponent} '
+                            f'({_format_record(x.score)}-{_format_record(x.opponent_score)})'
+                        ),
+                        axis=1
+                    )
+                else:
+                    sub['holder'] = sub.apply(
+                        lambda x: (
+                            f'{x.team} over {x.opponent} '
+                            f'({_format_record(x.score)}-{_format_record(x.opponent_score)})'
+                            if x.score >= x.opponent_score
+                            else (
+                                f'{x.opponent} over {x.team} '
+                                f'({_format_record(x.opponent_score)}-{_format_record(x.score)})'
+                            )
+                        ),
+                        axis=1
+                    )
 
             return _record_rows(sub, category, col, holder_col='holder')
 

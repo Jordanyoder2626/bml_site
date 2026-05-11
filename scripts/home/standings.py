@@ -7,6 +7,7 @@ from scripts.utils.database import Database
 from scripts.api.Settings import Params
 from scripts.api.Teams import Teams
 from scripts.utils import constants
+from scripts.utils import league_rules
 from scripts.utils import utils
 
 
@@ -24,7 +25,8 @@ class Standings:
             'win_perc',
             'matchup',
             'top_half',
-            'total_points'
+            'total_points',
+            'division'
         ])
 
     @staticmethod
@@ -116,13 +118,11 @@ class Standings:
             self.params.regular_season_end - self.week
         )
 
-        data = (
-            self.standings_df
-            .sort_values(
-                ['overall_wins', 'total_points'],
-                ascending=[False, False]
-            )
-            .to_dict(orient='records')
+        data = league_rules.order_playoff_standings(
+            records=self.standings_df.to_dict(orient='records'),
+            wins_key='overall_wins',
+            points_key='total_points',
+            playoff_teams=5
         )
 
         data_tm = [
@@ -218,13 +218,11 @@ class Standings:
             self.params.regular_season_end - self.week
         )
 
-        data = (
-            self.standings_df
-            .sort_values(
-                ['overall_wins', 'total_points'],
-                ascending=[False, False]
-            )
-            .to_dict(orient='records')
+        data = league_rules.order_playoff_standings(
+            records=self.standings_df.to_dict(orient='records'),
+            wins_key='overall_wins',
+            points_key='total_points',
+            playoff_teams=5
         )
 
         data_tm = [
@@ -403,6 +401,8 @@ class Standings:
 
         matchups = matchups.to_dict(orient='records')
 
+        active_teams = set(league_rules.active_team_names())
+
         for team_id in self.teams.team_ids:
 
             display_name = utils.teamid_to_name(
@@ -410,6 +410,9 @@ class Standings:
                 teams=self.teams,
                 teamid=team_id
             )
+
+            if display_name not in active_teams:
+                continue
 
             team_matchups = [
                 m for m in matchups
@@ -427,6 +430,24 @@ class Standings:
             m_record = f'{int(m_wins)}-{int(m_losses)}'
 
             th_record = '-'
+
+            division_opponents = [
+                team
+                for team in active_teams
+                if team != display_name
+                and league_rules.team_division(team) == league_rules.team_division(display_name)
+            ]
+            division_matchups = [
+                matchup
+                for matchup in team_matchups
+                if matchup['opponent'] in division_opponents
+            ]
+            division_wins = sum(
+                matchup['matchup_result']
+                for matchup in division_matchups
+            )
+            division_losses = len(division_matchups) - division_wins
+            division_record = f'{int(division_wins)}-{int(division_losses)}'
 
             ov_wins = m_wins
             ov_losses = m_losses
@@ -450,38 +471,32 @@ class Standings:
                 win_pct,
                 m_record,
                 th_record,
-                total_points
+                total_points,
+                division_record
             ]
 
             self.standings_df.loc[
                 len(self.standings_df)
             ] = row
 
-        self.standings_df.sort_values(
-            ['win_perc', 'total_points'],
-            ascending=[False, False],
-            inplace=True
-        )
-
-        playoff_list = []
-
-        top5 = self.standings_df.head(5)
-
-        playoff_list.extend(top5.team.to_list())
-
-        rest = (
-            self.standings_df[
-                ~self.standings_df.team.isin(playoff_list)
-            ]
-            .sort_values(
-                ['overall_wins', 'total_points'],
-                ascending=[False, False]
+        ordered_teams = [
+            r['team']
+            for r in league_rules.order_playoff_standings(
+                records=self.standings_df.rename(
+                    columns={
+                        'overall_wins': 'wins',
+                        'total_points': 'score'
+                    }
+                ).to_dict(orient='records'),
+                playoff_teams=5
             )
-        )
+        ]
 
-        self.standings_df = pd.concat(
-            [top5, rest],
-            axis=0
+        self.standings_df = (
+            self.standings_df
+            .set_index('team')
+            .reindex(ordered_teams)
+            .reset_index()
         )
 
         self.standings_df['seed'] = range(
@@ -493,7 +508,7 @@ class Standings:
         five_seed_wins = self.standings_df.iloc[4].overall_wins
 
         three_seed_wins = self.standings_df.iloc[2].overall_wins
-        sixth_wins = self.standings_df.iloc[5].overall_wins
+        sixth_wins = self.standings_df.iloc[5].overall_wins if len(self.standings_df) > 5 else 0
 
         self.standings_df['wb2'] = (
             two_seed_wins
@@ -504,9 +519,6 @@ class Standings:
             five_seed_wins
             - self.standings_df.overall_wins
         )
-
-        self.standings_df['pb6'] = 0
-        self.standings_df['pb6_disp'] = '-'
 
         self.standings_df['total_points_disp'] = (
             self.standings_df.total_points.apply(

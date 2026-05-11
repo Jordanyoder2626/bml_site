@@ -16,8 +16,9 @@ fa = FontAwesome(app)
 
 @app.route("/")
 def home():
-    week_str = 'Final' if week > 14 else f'Week {week-1}'
-    headings_st = tuple(['Rk', 'Team', 'Overall', 'Win%', 'Matchup', 'TopHalf', 'Points', 'WB-Bye', 'WB-5', 'PB-6', 'E#-Bye', 'E#-5'])
+    week_str = f'Week {week}'
+    power_week_str = f'Week {power_display_week}'
+    headings_st = tuple(['Rk', 'Team', 'Overall', 'Division', 'Win%', 'Points', 'Bye GB', 'Playoff GB'])
     data_st = ut.flask_get_data(standings_df[STANDINGS_COLUMNS_FLASK])
 
     cl_cols = ['Team', 'To Clinch', 'Net Wins', 'Clinch Over (Net Pts)' if week == params.regular_season_end else 'Clinch Over', 'Clinch Probability']
@@ -37,6 +38,7 @@ def home():
         headings_cl=headings_cl, data_cl=data_cl,
         headings_el=headings_el, data_el=data_el,
         headings_pr=headings_pr, data_pr=data_pr,
+        power_week=power_week_str,
         rank_data=rank_data
     )
 
@@ -45,7 +47,7 @@ def sims():
     headings_bets = tuple(['Team', 'Points', 'Matchup', 'TopHalf', 'Highest', 'Lowest'])
     data_bets = ut.flask_get_data(betting_table[['team', 'avg_score', 'p_win', 'p_tophalf', 'p_highest', 'p_lowest']])
 
-    headings_season_sim = tuple(['Team', 'Matchup', 'TopHalf', 'Total', 'Points', 'Playoff%', 'Finals%', 'Champion%'])
+    headings_season_sim = tuple(['Team', 'Projected Wins', 'Projected Losses', 'Points', 'Playoff%', 'Finals%', 'Champion%'])
     data_season_sim = ut.flask_get_data(season_sim_table)
 
     headings_w = tuple(season_sim_wins_table.columns)

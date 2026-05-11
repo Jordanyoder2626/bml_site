@@ -374,7 +374,8 @@ def plot_efficiency(season: int,
 
     colors = colors[:len(x)]
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(9.5, 5.8))
+    fig.subplots_adjust(right=0.68)
 
     fig.patch.set_facecolor('#f5f5f5')
     ax.set_facecolor('#f5f5f5')
@@ -435,9 +436,9 @@ def plot_efficiency(season: int,
     )
 
     plt.gcf().text(
-        0.95, 0.52,   # pushed farther right, outside plot
+        0.72, 0.52,
         legend_text,
-        fontsize=5,
+        fontsize=8,
         color='black',
         va='center',
         ha='left',

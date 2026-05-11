@@ -29,6 +29,7 @@ _CURRENT_YEAR = dt.datetime.now().year
 _CURRENT_MONTH = dt.datetime.now().month
 # SEASON = _CURRENT_YEAR if _CURRENT_MONTH >= 9 else _CURRENT_YEAR-1
 SEASON = 2025
+CURRENT_WEEK = 14
 LEAGUE_ID = os.getenv('LEAGUE_ID')
 SWID = os.getenv('SWID')
 ESPN_S2 = os.getenv('ESPN_S2')
@@ -45,7 +46,7 @@ SEASON_SIM_COLUMNS = 'id, season, week, team, matchup_wins, tophalf_wins, total_
 RECORDS_COLUMNS = 'id, category, record, holder, season, week'
 ALLTIME_STANDINGS_COLUMNS = 'id, team, seasons, playoffs, overall_rec, win_perc, matchup_rec, tophalf_rec, points'
 
-STANDINGS_COLUMNS_FLASK = ['seed', 'team', 'overall', 'win_perc', 'matchup', 'top_half', 'total_points_disp', 'wb2_disp', 'wb5_disp', 'pb6_disp', 'bye_magic_number', 'playoff_magic_number']
+STANDINGS_COLUMNS_FLASK = ['seed', 'team', 'overall', 'division', 'win_perc', 'total_points_disp', 'wb2_disp', 'wb5_disp']
 RECORDS_COLUMNS_FLASK = ['category', 'record', 'holder', 'season', 'week']
 ALLTIME_COLUMNS_FLASK = ['team', 'seasons', 'playoffs', 'overall_rec', 'win_perc', 'matchup_rec', 'tophalf_rec', 'points']
 
