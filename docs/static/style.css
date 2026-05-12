@@ -92,8 +92,22 @@
 /* set page background color */
 body {
     background-color: rgba(245,245,245);
+    min-width: 1180px;
+}
+
+html {
+    min-width: 1180px;
 }
 /* end page background */
+
+.navbar,
+.tscroll {
+  min-width: 1180px;
+}
+
+.tscroll {
+  overflow-x: auto;
+}
 
 
 /* format standings table to show playoff cutoffs */
@@ -143,6 +157,7 @@ body {
   border-radius: 3px 3px 0 0;
   overflow: scroll;
   position: relative;
+  white-space: nowrap;
 }
 
 .content-table thead tr {

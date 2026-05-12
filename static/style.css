@@ -94,7 +94,20 @@ body {
     background-color: rgba(245,245,245);
     min-width: 1180px;
 }
+
+html {
+    min-width: 1180px;
+}
 /* end page background */
+
+.navbar,
+.tscroll {
+  min-width: 1180px;
+}
+
+.tscroll {
+  overflow-x: auto;
+}
 
 
 /* format standings table to show playoff cutoffs */
