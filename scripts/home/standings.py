@@ -124,11 +124,16 @@ class Standings:
             points_key='total_points',
             playoff_teams=5
         )
+        if len(data) <= seed:
+            return []
 
-        data_tm = [
+        data_matches = [
             d for d in data
             if d['team'] == team_name
-        ][0]
+        ]
+        if not data_matches:
+            return []
+        data_tm = data_matches[0]
 
         clinched = True if data_tm[f'wb{seed}'] == -99 else False
         eliminated = True if data_tm[f'wb{seed}'] == 99 else False
@@ -169,10 +174,13 @@ class Standings:
 
             else:
 
-                team_idx = [
+                team_matches = [
                     i for i, data in enumerate(data)
                     if team_name in data['team']
-                ][0]
+                ]
+                if not team_matches:
+                    return rows
+                team_idx = team_matches[0]
 
                 seed_to_team = data[(seed - 1):team_idx]
 
@@ -224,11 +232,16 @@ class Standings:
             points_key='total_points',
             playoff_teams=5
         )
+        if len(data) < seed:
+            return []
 
-        data_tm = [
+        data_matches = [
             d for d in data
             if d['team'] == team_name
-        ][0]
+        ]
+        if not data_matches:
+            return []
+        data_tm = data_matches[0]
 
         clinched = True if data_tm[f'wb{seed}'] == -99 else False
         eliminated = True if data_tm[f'wb{seed}'] == 99 else False
@@ -276,10 +289,13 @@ class Standings:
 
             else:
 
-                team_idx = [
+                team_matches = [
                     i for i, data in enumerate(data)
                     if team_name in data['team']
-                ][0]
+                ]
+                if not team_matches:
+                    return rows
+                team_idx = team_matches[0]
 
                 team_to_seed = data[(team_idx + 1):(seed + 1)]
 
@@ -340,7 +356,10 @@ class Standings:
             {k: v for k, v in d.items()}
             for d in matchups
             if d.get('week') == week
-        ][0]
+        ]
+        if not matchups_filter:
+            return {}
+        matchups_filter = matchups_filter[0]
 
         if matchups_filter.get('opponent'):
 
@@ -503,6 +522,18 @@ class Standings:
             1,
             len(self.standings_df) + 1
         )
+
+        if len(self.standings_df) < 5:
+            self.standings_df['wb2'] = 0
+            self.standings_df['wb5'] = 0
+            self.standings_df['total_points_disp'] = (
+                self.standings_df.total_points.apply(
+                    lambda x: self._format_points(x)
+                )
+            )
+            self.standings_df['wb2_disp'] = '-'
+            self.standings_df['wb5_disp'] = '-'
+            return self.standings_df.reset_index(drop=True)
 
         two_seed_wins = self.standings_df.iloc[1].overall_wins
         five_seed_wins = self.standings_df.iloc[4].overall_wins

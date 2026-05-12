@@ -35,6 +35,9 @@ class PlayoffScenarios:
             week=self.params.as_of_week
         ).retrieve_data(how='season')
         df = df[df.team.isin(self.team_names)]
+        if df.empty:
+            return []
+
         df['wins'] = df.matchup_result
 
         standings = (
@@ -122,6 +125,9 @@ class PlayoffScenarios:
 
     def get_teams(self, standings: list[dict], seed: int) -> tuple[list[str], list[str]]:
         standings = self._sort_standings(standings)
+        if not standings:
+            return [], []
+
         games_played = standings[0]['wins'] + standings[0]['losses']
         weeks_left = self.params.regular_season_end - games_played
 
@@ -144,6 +150,9 @@ class PlayoffScenarios:
         )
 
     def get_new_clinches(self, seed: int) -> dict:
+        if not self.standings or not self.scenarios:
+            return {}
+
         clinched, eliminated = self.get_teams(
             standings=self.standings,
             seed=seed

@@ -127,6 +127,8 @@ n_teams = len(teams.team_ids)
 # load db tables
 day = dt.now().strftime('%a')
 the_week = params.as_of_week if day == 'Tue' else params.current_week  # Wed is start of new week, and season_sim runs on Tue
+the_week = max(the_week, 1)
+completed_week = max(min(params.as_of_week, params.regular_season_end), 0)
 db_pr = Database(table='power_ranks', season=season, week=power_data_week)
 betting_table = (
     Database(table='betting_table', season=season, week=params.current_week)
@@ -142,8 +144,8 @@ season_sim_table = (
 )
 season_sim_wins_table = Database(table='season_sim_wins', season=season, week=the_week).retrieve_data(how='week')
 season_sim_ranks_table = Database(table='season_sim_ranks', season=season, week=the_week).retrieve_data(how='week')
-h2h_data = Database(table='h2h', season=season, week=week).retrieve_data(how='season')
-ss_data = Database(table='schedule_switcher', season=season, week=week).retrieve_data(how='season')
+h2h_data = Database(table='h2h', season=season, week=completed_week).retrieve_data(how='season')
+ss_data = Database(table='schedule_switcher', season=season, week=completed_week).retrieve_data(how='season')
 alltime_df = Database(table='alltime_standings').retrieve_data(how='all')
 records_df = Database(table='records').retrieve_data(how='all')
 
@@ -153,9 +155,8 @@ standings = Standings(season=season, week=week)
 standings_df = standings.format_standings()
 clinches = standings.clinching_scenarios()
 ps = PlayoffScenarios(data=data, params=params, teams=teams)
-show_clinch_scenarios = params.weeks_left <= 4
-bye_scens = ps.get_new_clinches(seed=2) if show_clinch_scenarios else {}
-playoff_scens = ps.get_new_clinches(seed=5) if show_clinch_scenarios else {}
+bye_scens = ps.get_new_clinches(seed=2)
+playoff_scens = ps.get_new_clinches(seed=5)
 magic_numbers = ps.get_magic_numbers()
 standings_df['bye_magic_number'] = standings_df['team'].map(lambda t: magic_numbers.get(t, {}).get('bye', None))
 standings_df['playoff_magic_number'] = standings_df['team'].map(lambda t: magic_numbers.get(t, {}).get('playoff', None))
@@ -167,9 +168,6 @@ standings_df['playoff_status'] = standings_df.apply(
     lambda x: x.wb5_disp if x.wb5_disp in ['c', 'x'] else x.playoff_magic_number,
     axis=1
 )
-
-if not show_clinch_scenarios:
-    clinches = {'clinches': [], 'eliminations': []}
 
 def format_prob(p):
     if 0 < p <= 0.001:
@@ -297,15 +295,19 @@ else:
 
 
 # SCENARIOS PAGE
-h2h_data = h2h_data[h2h_data.week <= params.regular_season_end]
-total_wins = scenarios.get_total_wins(h2h_data=h2h_data, teams=teams, week=week)
+h2h_data = h2h_data[h2h_data.week <= completed_week] if 'week' in h2h_data.columns else h2h_data
+total_wins = scenarios.get_total_wins(h2h_data=h2h_data, teams=teams, week=completed_week + 1)
 wins_by_week = scenarios.get_wins_by_week(h2h_data=h2h_data, total_wins=total_wins, teams=teams)
-wins_vs_opp = scenarios.get_wins_vs_opp(h2h_data=h2h_data, total_wins=total_wins, wins_by_week=wins_by_week, week=week)
+wins_vs_opp = scenarios.get_wins_vs_opp(h2h_data=h2h_data, total_wins=total_wins, wins_by_week=wins_by_week, week=completed_week + 1)
 wins_vs_opp = display_team_columns(display_team_values(wins_vs_opp, ['team']))
 wins_by_week = display_team_values(wins_by_week, ['team'])
 
-ss_disp_temp = scenarios.get_schedule_switcher_display(ss_data=ss_data, total_wins=total_wins, week=week)
-ss_luck = pd.DataFrame.from_dict(scenarios.calculate_schedule_luck(ss_data), orient='index').reset_index().rename(columns={'index':'team', 0:'Luck'})
+ss_disp_temp = scenarios.get_schedule_switcher_display(ss_data=ss_data, total_wins=total_wins, week=completed_week + 1)
+ss_luck_dict = scenarios.calculate_schedule_luck(ss_data)
+if ss_luck_dict:
+    ss_luck = pd.DataFrame.from_dict(ss_luck_dict, orient='index').reset_index().rename(columns={'index':'team', 0:'Luck'})
+else:
+    ss_luck = pd.DataFrame({'team': total_wins.team, 'Luck': '+0.0'})
 ss_disp = pd.merge(ss_disp_temp, ss_luck, on='team')
 ss_disp = display_team_columns(display_team_values(ss_disp, ['team']))
 

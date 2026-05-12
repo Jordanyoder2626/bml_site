@@ -10,6 +10,7 @@ from scripts.simulations import simulations
 import math
 import time
 import warnings
+import copy
 
 import pandas as pd
 
@@ -84,6 +85,40 @@ def _active_team_names(teams: Teams) -> list[str]:
             names.append(team_name)
 
     return names
+
+
+def _fill_missing_lineup_weeks(lineups: dict, params: Params) -> dict:
+    if not lineups:
+        return lineups
+
+    available_weeks = sorted(lineups)
+    for week in range(params.current_week, params.regular_season_end + 1):
+        if week in lineups:
+            continue
+
+        fallback_weeks = [w for w in available_weeks if w <= week]
+        fallback_week = fallback_weeks[-1] if fallback_weeks else available_weeks[0]
+        lineups[week] = copy.deepcopy(lineups[fallback_week])
+        available_weeks = sorted(lineups)
+
+    return lineups
+
+
+def _validate_future_schedule(teams: Teams, params: Params) -> None:
+    schedule_weeks = {
+        matchup.get('matchupPeriodId')
+        for matchup in teams.matchups.get('schedule', [])
+    }
+    missing_weeks = [
+        week
+        for week in range(params.current_week, params.regular_season_end + 1)
+        if week not in schedule_weeks
+    ]
+    if missing_weeks:
+        raise RuntimeError(
+            'Missing future matchup schedule weeks: '
+            + ', '.join(str(week) for week in missing_weeks)
+        )
 
 
 def _load_actual_results(params: Params) -> pd.DataFrame:
@@ -573,9 +608,10 @@ def run_week(sim_week: int) -> None:
     print(f"Processing season sim week {sim_week}")
     start = time.perf_counter()
 
-    data = DataLoader(year=constants.SEASON, week=sim_week)
+    data = DataLoader(year=constants.SEASON)
     params = _set_sim_week(Params(data), sim_week)
     teams = Teams(data)
+    _validate_future_schedule(teams=teams, params=params)
     rosters = Rosters()
     replacement_players = simulations.get_replacement_players(data)
     lineups = simulations.get_ros_projections(
@@ -585,10 +621,13 @@ def run_week(sim_week: int) -> None:
         rosters=rosters,
         replacement_players=replacement_players
     )
+    lineups = _fill_missing_lineup_weeks(lineups=lineups, params=params)
     team_names = _active_team_names(teams)
 
     results = _load_actual_results(params=params)
     week_sim = _load_current_week_sim(params=params)
+    if not week_sim.empty:
+        lineups.pop(params.current_week, None)
     to_add = results.add(week_sim, fill_value=0)
 
     week_data, playoff_matchups, projections_dict = _playoff_context(

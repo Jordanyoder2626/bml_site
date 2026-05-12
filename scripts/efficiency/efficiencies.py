@@ -15,6 +15,35 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 matplotlib.use('Agg')
 
 
+def _plot_placeholder(message: str, season: int, week: int) -> str:
+    fig, ax = plt.subplots(figsize=(9.5, 5.8))
+    fig.patch.set_facecolor('#f5f5f5')
+    ax.set_facecolor('#f5f5f5')
+    ax.axis('off')
+    ax.text(
+        0.5,
+        0.5,
+        message,
+        ha='center',
+        va='center',
+        fontsize=16,
+        color='black',
+        transform=ax.transAxes
+    )
+    plt.title(f"Efficiency Through Week {week}, {season}")
+
+    png_img = io.BytesIO()
+    FigureCanvas(fig).print_png(png_img)
+    plt.close(fig)
+
+    png_str = "data:image/png;base64,"
+    png_str += base64.b64encode(
+        png_img.getvalue()
+    ).decode('utf8')
+
+    return png_str
+
+
 def get_optimal_points(params: Params,
                        teams: Teams,
                        rosters: Rosters,
@@ -329,9 +358,37 @@ def plot_efficiency(season: int,
         week=week
     ).retrieve_data(how='season')
 
+    required_cols = {
+        'team',
+        'week',
+        x,
+        y,
+        'actual_lineup_score',
+        'optimal_lineup_score',
+        'best_projected_lineup_score'
+    }
+    if eff.empty or not required_cols.issubset(eff.columns):
+        return _plot_placeholder(
+            message='No lineup efficiency data available yet',
+            season=season,
+            week=week
+        )
+
     cols = eff.select_dtypes(include=['float']).columns.tolist()
+    if not cols or pd.isna(eff.week.max()) or eff.week.max() == 0:
+        return _plot_placeholder(
+            message='No lineup efficiency data available yet',
+            season=season,
+            week=week
+        )
 
     df = eff.groupby('team')[cols].sum() / eff.week.max()
+    if df.empty or x not in df.columns or y not in df.columns:
+        return _plot_placeholder(
+            message='No lineup efficiency data available yet',
+            season=season,
+            week=week
+        )
 
     df['act_opt_perc'] = df[x] / df[y]
 
