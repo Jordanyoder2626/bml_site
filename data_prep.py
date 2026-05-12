@@ -156,6 +156,185 @@ def format_bootyman_scenario_statements(rows: list[list]) -> list[list]:
     return formatted_rows
 
 
+def _format_matchup_record(wins: int, losses: int, ties: int) -> str:
+    if ties:
+        return f'{wins}-{losses}-{ties}'
+    return f'{wins}-{losses}'
+
+
+def build_all_time_matchups_table(matchups: pd.DataFrame) -> pd.DataFrame:
+    if matchups.empty:
+        return pd.DataFrame(columns=['Team'])
+
+    matchups = matchups.copy()
+    matchups = matchups[
+        matchups.team.notna()
+        & matchups.opponent.notna()
+        & matchups.matchup_result.notna()
+    ]
+
+    if matchups.empty:
+        return pd.DataFrame(columns=['Team'])
+
+    matchups['matchup_result'] = pd.to_numeric(
+        matchups.matchup_result,
+        errors='coerce'
+    )
+    matchups = matchups.dropna(subset=['matchup_result'])
+
+    teams = sorted(
+        set(matchups.team.dropna())
+        | set(matchups.opponent.dropna())
+    )
+    rows = []
+
+    for team in teams:
+        row = {'Team': team}
+        team_games = matchups[matchups.team == team]
+
+        for opponent in teams:
+            if opponent == team:
+                row[opponent] = '-'
+                continue
+
+            games = team_games[team_games.opponent == opponent]
+            if games.empty:
+                row[opponent] = '-'
+                continue
+
+            wins = int((games.matchup_result == 1).sum())
+            losses = int((games.matchup_result == 0).sum())
+            ties = int((games.matchup_result == 0.5).sum())
+            row[opponent] = _format_matchup_record(wins, losses, ties)
+
+        wins = int((team_games.matchup_result == 1).sum())
+        losses = int((team_games.matchup_result == 0).sum())
+        ties = int((team_games.matchup_result == 0.5).sum())
+        row['Total'] = _format_matchup_record(wins, losses, ties)
+        rows.append(row)
+
+    return pd.DataFrame(rows, columns=['Team', *teams, 'Total'])
+
+
+def _pair_record(matchups: pd.DataFrame, team: str, opponent: str) -> tuple[int, int, int]:
+    games = matchups[
+        (matchups.team == team)
+        & (matchups.opponent == opponent)
+    ]
+    wins = int((games.matchup_result == 1).sum())
+    losses = int((games.matchup_result == 0).sum())
+    ties = int((games.matchup_result == 0.5).sum())
+    return wins, losses, ties
+
+
+def _pair_record_text(matchups: pd.DataFrame, team: str, opponent: str) -> str:
+    wins, losses, ties = _pair_record(matchups, team, opponent)
+    return f'{team} {_format_matchup_record(wins, losses, ties)}'
+
+
+def _pair_matchup_text(matchups: pd.DataFrame, team: str, opponent: str) -> str:
+    wins, _, ties = _pair_record(matchups, team, opponent)
+    opponent_wins, _, _ = _pair_record(matchups, opponent, team)
+
+    if ties:
+        return f'{team} ({wins}) vs {opponent} ({opponent_wins}) - {ties} ties'
+    return f'{team} ({wins}) vs {opponent} ({opponent_wins})'
+
+
+def build_rivalry_record_rows(matchups: pd.DataFrame) -> pd.DataFrame:
+    columns = ['category', 'record', 'holder', 'season', 'week']
+    if matchups.empty:
+        return pd.DataFrame(columns=columns)
+
+    matchups = matchups.copy()
+    matchups = matchups[
+        matchups.team.notna()
+        & matchups.opponent.notna()
+        & matchups.matchup_result.notna()
+    ]
+    matchups = matchups[
+        (matchups.team != 'Peyton')
+        & (matchups.opponent != 'Peyton')
+    ]
+    matchups['matchup_result'] = pd.to_numeric(
+        matchups.matchup_result,
+        errors='coerce'
+    )
+    matchups = matchups.dropna(subset=['matchup_result'])
+
+    teams = sorted(
+        set(matchups.team.dropna())
+        | set(matchups.opponent.dropna())
+    )
+    pair_rows = []
+
+    for i, team in enumerate(teams):
+        for opponent in teams[i + 1:]:
+            wins, losses, ties = _pair_record(matchups, team, opponent)
+            games = wins + losses + ties
+            if games == 0:
+                continue
+
+            win_pct = (wins + (ties * 0.5)) / games
+            opponent_win_pct = 1 - win_pct
+            better_team = team if win_pct >= opponent_win_pct else opponent
+            worse_team = opponent if better_team == team else team
+            better_pct = max(win_pct, opponent_win_pct)
+
+            pair_rows.append({
+                'team': team,
+                'opponent': opponent,
+                'games': games,
+                'closest_margin': abs(win_pct - 0.5),
+                'better_team': better_team,
+                'worse_team': worse_team,
+                'better_pct': better_pct,
+            })
+
+    if not pair_rows:
+        return pd.DataFrame(columns=columns)
+
+    pairs = pd.DataFrame(pair_rows)
+    closest_margin = pairs.closest_margin.min()
+    closest_pairs = pairs[pairs.closest_margin == closest_margin].sort_values(
+        ['games', 'team', 'opponent'],
+        ascending=[False, True, True]
+    )
+    daddy = pairs.sort_values(
+        ['better_pct', 'games'],
+        ascending=[False, False]
+    ).iloc[0]
+
+    daddy_team = daddy['better_team']
+    daddy_opponent = daddy['worse_team']
+    closest_records = [
+        _pair_matchup_text(matchups, row.team, row.opponent)
+        for row in closest_pairs.itertuples()
+    ]
+    closest_holders = [
+        f'{row.team} vs {row.opponent}'
+        for row in closest_pairs.itertuples()
+    ]
+
+    rows = [
+        [
+            'Closest Rivalries' if len(closest_pairs) > 1 else 'Closest Rivalry',
+            '<br>'.join(closest_records),
+            '<br>'.join(closest_holders),
+            '',
+            ''
+        ],
+        [
+            "Who's Your Daddy?",
+            _pair_matchup_text(matchups, daddy_team, daddy_opponent),
+            f'{daddy_team} over {daddy_opponent}',
+            '',
+            ''
+        ],
+    ]
+    return pd.DataFrame(rows, columns=columns)
+
+
 season = constants.SEASON
 data = DataLoader(season)
 params = Params(data)
@@ -188,6 +367,25 @@ h2h_data = Database(table='h2h', season=season, week=week).retrieve_data(how='se
 ss_data = Database(table='schedule_switcher', season=season, week=week).retrieve_data(how='season')
 alltime_df = Database(table='alltime_standings').retrieve_data(how='all')
 records_df = Database(table='records').retrieve_data(how='all')
+actual_matchups_df = Database(table='matchups').retrieve_data(how='all')
+alltime_matchups_df = build_all_time_matchups_table(actual_matchups_df)
+rivalry_records_df = build_rivalry_record_rows(actual_matchups_df)
+records_df = records_df.copy()
+season_record_categories = {
+    'Most Wins',
+    'Most Losses',
+    'Highest PPG',
+    'Lowest PPG',
+    'Most Top Half Wins',
+    'Most Top Half Losses'
+}
+if not records_df.empty and 'category' in records_df.columns and 'week' in records_df.columns:
+    records_df.loc[
+        records_df.category.isin(season_record_categories),
+        'week'
+    ] = ''
+if not rivalry_records_df.empty:
+    records_df = pd.concat([records_df, rivalry_records_df], ignore_index=True)
 
 
 # HOME PAGE
@@ -407,3 +605,37 @@ champ_count['Second'] = champ_count.Second.apply(
     ) + '<br>'
 )
 champ_count = champ_count.reset_index().rename(columns={'index': 'Team'})
+
+bootymen = pd.read_csv(r'bootyman_bowl.csv').sort_values('Season', ascending=False)
+prev_bootymen = bootymen[['Season', 'Team', 'Runner Up']]
+
+bootyman_teams = pd.Index(
+    sorted(set(league_rules.active_team_names()) | set(pd.concat([bootymen['Team'], bootymen['Runner Up']]).dropna()))
+)
+bootyman_count = (
+    pd.concat(
+        [
+            bootymen.groupby('Team').size().rename('First'),
+            bootymen.groupby('Runner Up').size().rename('Second')
+        ], axis=1
+    )
+    .reindex(bootyman_teams)
+    .fillna(0)
+    .sort_values('First', ascending=False)
+)
+
+bootyman_count['First'] = bootyman_count.First.apply(
+    lambda n: ''.join(
+        [
+            f'<i class="fa fa-poop icon-gold"></i>{"" if (i + 1) % 3 else "<span><br></span>"}' for i in range(int(n))
+        ]
+    ) + '<br>'
+)
+bootyman_count['Second'] = bootyman_count.Second.apply(
+    lambda n: ''.join(
+        [
+            f'<i class="fa fa-poop icon-silver"></i>{"" if (i + 1) % 3 else "<span><br></span>"}' for i in range(int(n))
+        ]
+    ) + '<br>'
+)
+bootyman_count = bootyman_count.reset_index().rename(columns={'index': 'Team'})

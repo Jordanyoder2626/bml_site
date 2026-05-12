@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<br>
+<style>
+h1 {text-align: center;}
+h3 {text-align: center;}
+p {text-align: center;}
+
+table.center {
+  margin-left: auto;
+  margin-right: auto;
+  vertical-align: middle;
+}
+</style>
+<h1>The Hall of Bootymen</h1>
+<div class="tscroll" style="height:415px; overflow:auto;">
+    <table class="table table-hover center content-table champs" style="table-layout:auto; width:50%; table-layout: fixed;">
+        <thead style="position: sticky; top: 0; background-color: white; z-index: 1;">
+            <tr>
+                {% for header in headings_pb %}
+                    <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in data_pb %}
+            <tr>
+                {% for cell in row %}
+                    <td>{{ cell }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+<br>
+<div class="tscroll" style="overflow-x:auto;">
+    <table class="table table-hover center content-table" style="table-layout:auto; width:50%; table-layout: fixed;">
+        <thead>
+            <tr>
+                {% for header in headings_bc %}
+                    <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in data_bc %}
+            <tr>
+                {% for cell in row %}
+                    <td>{{ cell|safe }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

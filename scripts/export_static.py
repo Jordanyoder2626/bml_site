@@ -12,6 +12,7 @@ ROUTES = {
     "/scenarios/": "scenarios/index.html",
     "/efficiency/": "efficiency/index.html",
     "/champions/": "champions/index.html",
+    "/bootymen/": "bootymen/index.html",
     "/records/": "records/index.html",
 }
 

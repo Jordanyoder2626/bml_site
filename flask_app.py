@@ -138,16 +138,32 @@ def champs():
                            headings_pc=headings_pc, data_pc=data_pc,
                            headings_cc=headings_cc, data_cc=data_cc)
 
+@app.route("/bootymen/")
+def bootymen():
+    headings_pb = tuple(prev_bootymen.columns)
+    data_pb = ut.flask_get_data(prev_bootymen)
+
+    headings_bc = tuple(bootyman_count.columns)
+    data_bc = ut.flask_get_data(bootyman_count)
+
+    return render_template("bootymen.html",
+                           headings_pb=headings_pb, data_pb=data_pb,
+                           headings_bc=headings_bc, data_bc=data_bc)
+
 @app.route("/records/")
 def records():
     headings_alltime = tuple(['Team', 'Seasons', 'Playoffs', 'Overall', 'Win%', 'Matchup', 'Top Half', 'Points'])
     data_alltime = ut.flask_get_data(alltime_df[ALLTIME_COLUMNS_FLASK])
+
+    headings_matchups = tuple(alltime_matchups_df.columns)
+    data_matchups = ut.flask_get_data(alltime_matchups_df)
 
     headings_rec = tuple(['Category', 'Record', 'Holder', 'Season', 'Week'])
     data_rec = ut.flask_get_data(records_df[RECORDS_COLUMNS_FLASK])
 
     return render_template("records.html",
                            headings_alltime=headings_alltime, data_alltime=data_alltime,
+                           headings_matchups=headings_matchups, data_matchups=data_matchups,
                            headings_rec=headings_rec, data_rec=data_rec)
 
 # Run app
