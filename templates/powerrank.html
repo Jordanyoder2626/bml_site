@@ -34,7 +34,7 @@ caption {font-size: small;}
         </thead>
         <tbody>
         {% for row in data_st %}
-            <tr class='{% if row[1] in ["King's Landing", "Gustavo", "The Warriors", "Grudens Grinders", "Mighty Acorns"] %}division-east{% else %}division-west{% endif %}'>
+            <tr class='{% if row[1] in ["King's Landing", "Gustavo", "The Warriors", "Gruden's Grinders", "Mighty Acorns"] %}division-east{% else %}division-west{% endif %}'>
                 {% for cell in row %}
                     <td>{{ cell }}</td>
                 {% endfor %}

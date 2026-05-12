@@ -2,6 +2,9 @@ from scripts.utils import constants
 
 
 EAST_DIVISION = {'Quinn', 'Caden', 'Jordan', 'Rendle', 'Luke'}
+DIVISION_ALIASES = {
+    'thomas': 'Rendle'
+}
 
 
 def active_team_names() -> list[str]:
@@ -13,6 +16,7 @@ def active_team_names() -> list[str]:
 
 
 def team_division(team: str) -> str:
+    team = DIVISION_ALIASES.get(team, team)
     return 'East' if team in EAST_DIVISION else 'West'
 
 
