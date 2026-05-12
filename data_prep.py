@@ -16,6 +16,104 @@ from scripts.simulations import simulations
 from scripts.efficiency.efficiencies import plot_efficiency
 
 
+MANAGER_TO_TEAM_NAME = {
+    team['name']['display']: team['name'].get('team_name', team['name']['display'])
+    for team in constants.TEAM_IDS.values()
+}
+
+
+def display_team_name(name: str) -> str:
+    return MANAGER_TO_TEAM_NAME.get(name, name)
+
+
+def display_team_values(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
+    df = df.copy()
+    for column in columns:
+        if column in df.columns:
+            df[column] = df[column].map(display_team_name)
+    return df
+
+
+def display_team_columns(df: pd.DataFrame) -> pd.DataFrame:
+    return df.rename(columns={
+        column: display_team_name(column)
+        for column in df.columns
+    })
+
+
+def display_team_list_rows(rows: list[list]) -> list[list]:
+    return [
+        [display_team_name(row[0]), *row[1:]]
+        if row else row
+        for row in rows
+    ]
+
+
+def _display_team_series(names: str) -> str:
+    teams = [
+        display_team_name(name.strip())
+        for name in str(names).split(',')
+        if name.strip()
+    ]
+
+    if len(teams) <= 1:
+        return teams[0] if teams else ''
+    if len(teams) == 2:
+        return ' or '.join(teams)
+    return f'{", ".join(teams[:-1])}, or {teams[-1]}'
+
+
+def _net_result_phrase(net_wins: int, other_teams: str, scenario_type: str) -> str:
+    other_teams = _display_team_series(other_teams)
+
+    if scenario_type == 'clinch':
+        if net_wins >= 1:
+            return f'with a win and a loss by {other_teams}'
+        if net_wins == 0:
+            return f'with the same result or better than {other_teams}'
+        return f'even with a loss if {other_teams} wins'
+
+    if net_wins >= 1:
+        return f'even with a win and a loss by {other_teams}'
+    if net_wins == 0:
+        return f'with the same result or worse than {other_teams}'
+    return f'with a loss and a win by {other_teams}'
+
+
+def _visible_probability(probability: str) -> bool:
+    return str(probability).strip() != '0.0%'
+
+
+def _team_verb(team_name: str, singular: str, plural: str) -> str:
+    return plural if team_name.endswith('s') else singular
+
+
+def format_scenario_statements(rows: list[list], scenario_type: str) -> list[list]:
+    formatted_rows = []
+
+    for row in rows:
+        if len(row) < 5:
+            continue
+
+        team, target, net_wins, other_teams, probability = row[:5]
+        if not _visible_probability(probability):
+            continue
+
+        display_team = display_team_name(team)
+        verb = (
+            _team_verb(display_team, 'clinches', 'clinch')
+            if scenario_type == 'clinch'
+            else _team_verb(display_team, 'is eliminated from', 'are eliminated from')
+        )
+        statement = (
+            f'{display_team} {verb} {str(target).lower()} '
+            f'{_net_result_phrase(int(net_wins), other_teams, scenario_type)}.'
+        )
+        formatted_rows.append([statement, probability])
+
+    return formatted_rows
+
+
 season = constants.SEASON
 data = DataLoader(season)
 params = Params(data)
@@ -84,13 +182,13 @@ def format_prob(p):
 for s in clinches['clinches']:
     if s[1] == 'Bye':
         try:
-            prob = f'{format_prob(bye_scens[s[0]]['p_clinch'])}'
+            prob = format_prob(bye_scens[s[0]]['p_clinch'])
         except KeyError:
             prob = f'0.0%'
         s.extend([prob])
     else:
         try:
-            prob = f'{format_prob(playoff_scens[s[0]]['p_clinch'])}'
+            prob = format_prob(playoff_scens[s[0]]['p_clinch'])
         except KeyError:
             prob = f'0.0%'
         s.extend([prob])
@@ -98,17 +196,27 @@ for s in clinches['clinches']:
 for s in clinches['eliminations']:
     if s[1] == 'Bye':
         try:
-            prob = f'{format_prob(bye_scens[s[0]]['p_elim'])}'
+            prob = format_prob(bye_scens[s[0]]['p_elim'])
         except KeyError:
             prob = f'0.0%'
         s.extend([prob])
     else:
         try:
-            prob = f'{format_prob(playoff_scens[s[0]]['p_elim'])}'
+            prob = format_prob(playoff_scens[s[0]]['p_elim'])
         except KeyError:
             prob = f'0.0%'
         s.extend([prob])
 # TODO: fix last week clinches/elims. for wild card, net wins and probability should be blank (or save all sims to get prob of team getting outscored by x pts)
+
+standings_df = display_team_values(standings_df, ['team'])
+clinches['clinches'] = format_scenario_statements(
+    clinches['clinches'],
+    scenario_type='clinch'
+)
+clinches['eliminations'] = format_scenario_statements(
+    clinches['eliminations'],
+    scenario_type='eliminate'
+)
 
 
 pr_data = db_pr.retrieve_data(how='season')
@@ -118,6 +226,8 @@ pr_table = pr_table.sort_values('power_score_raw', ascending=False)
 pr_table['rank_change'] = -pr_table.rank_change
 pr_table[['total_points', 'weekly_points', 'consistency', 'manager', 'luck']] = pr_table[['season_idx', 'week_idx', 'consistency_idx', 'manager_idx', 'luck_idx']].rank(ascending=False, method='min').astype('Int32')
 pr_cols = ['team', 'total_points', 'weekly_points', 'consistency', 'manager', 'luck', 'power_rank', 'rank_change', 'power_score_norm', 'score_norm_change']
+pr_table = display_team_values(pr_table, ['team'])
+pr_data = display_team_values(pr_data, ['team'])
 rank_data = pr_data[['team', 'week', 'power_rank', 'power_score_norm']].sort_values(['week', 'power_score_norm'], ascending=[True, False]).to_dict(orient='records')
 rank_data = json.dumps(rank_data, indent=2)
 rank_data = {'rank_data': rank_data}
@@ -135,6 +245,7 @@ else:
     betting_table['p_tophalf'] = betting_table.p_tophalf.apply(lambda x: simulations.calculate_odds(init_prob=x))
     betting_table['p_highest'] = betting_table.p_highest.apply(lambda x: simulations.calculate_odds(init_prob=x))
     betting_table['p_lowest'] = betting_table.p_lowest.apply(lambda x: simulations.calculate_odds(init_prob=x))
+    betting_table = display_team_values(betting_table, ['team'])
 
 keep_cols = ['team', 'projected_wins', 'projected_losses', 'total_points', 'playoffs', 'finals', 'champion']
 if season_sim_table.empty:
@@ -167,12 +278,14 @@ else:
     season_sim_table = season_sim_table.reindex(teams_order).reset_index()[keep_cols]
 
     order = season_sim_table.team.tolist()
+    season_sim_table = display_team_values(season_sim_table, ['team'])
     if season_sim_wins_table.empty:
         season_sim_wins_table = pd.DataFrame(columns=['Team'])
     else:
         season_sim_wins_table['p_str'] = round(season_sim_wins_table.p * 100).astype(int)
         season_sim_wins_table = season_sim_wins_table[['team', 'wins', 'p_str']].pivot(index='team', columns='wins', values='p_str').fillna('')
         season_sim_wins_table = season_sim_wins_table.reindex(order).reset_index().rename(columns={'team': 'Team'})
+        season_sim_wins_table = display_team_values(season_sim_wins_table, ['Team'])
 
     if season_sim_ranks_table.empty:
         season_sim_ranks_table = pd.DataFrame(columns=['Team'])
@@ -180,6 +293,7 @@ else:
         season_sim_ranks_table['p_str'] = round(season_sim_ranks_table.p * 100).astype(int)
         season_sim_ranks_table = season_sim_ranks_table[['team', 'ranks', 'p_str']].pivot(index='team', columns='ranks', values='p_str').fillna('')
         season_sim_ranks_table = season_sim_ranks_table.reindex(order).reset_index().rename(columns={'team': 'Team'})
+        season_sim_ranks_table = display_team_values(season_sim_ranks_table, ['Team'])
 
 
 # SCENARIOS PAGE
@@ -187,10 +301,13 @@ h2h_data = h2h_data[h2h_data.week <= params.regular_season_end]
 total_wins = scenarios.get_total_wins(h2h_data=h2h_data, teams=teams, week=week)
 wins_by_week = scenarios.get_wins_by_week(h2h_data=h2h_data, total_wins=total_wins, teams=teams)
 wins_vs_opp = scenarios.get_wins_vs_opp(h2h_data=h2h_data, total_wins=total_wins, wins_by_week=wins_by_week, week=week)
+wins_vs_opp = display_team_columns(display_team_values(wins_vs_opp, ['team']))
+wins_by_week = display_team_values(wins_by_week, ['team'])
 
 ss_disp_temp = scenarios.get_schedule_switcher_display(ss_data=ss_data, total_wins=total_wins, week=week)
 ss_luck = pd.DataFrame.from_dict(scenarios.calculate_schedule_luck(ss_data), orient='index').reset_index().rename(columns={'index':'team', 0:'Luck'})
 ss_disp = pd.merge(ss_disp_temp, ss_luck, on='team')
+ss_disp = display_team_columns(display_team_values(ss_disp, ['team']))
 
 
 # TEAM EFFICIENCY PAGE

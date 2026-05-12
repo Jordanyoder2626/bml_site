@@ -173,7 +173,8 @@ def get_best_lineup(week_data: dict,
                     replacement_players: dict[float],
                     projections: list[dict],
                     week: int,
-                    team_id: int) -> dict:
+                    team_id: int,
+                    use_actuals: bool = True) -> dict:
     """
     Calculate a team's best lineup using projections from Fantasy Pros
 
@@ -217,7 +218,12 @@ def get_best_lineup(week_data: dict,
         played = 0
         for stat in plr['playerPoolEntry']['player']['stats']:
             if stat['scoringPeriodId'] == week:
-                if stat['seasonId'] == constants.SEASON and stat['scoringPeriodId'] == week and stat['statSourceId'] == 0:
+                if (
+                    use_actuals
+                    and stat['seasonId'] == constants.SEASON
+                    and stat['scoringPeriodId'] == week
+                    and stat['statSourceId'] == 0
+                ):
                     actual = stat['appliedTotal']
                     played = 1
                 try:
@@ -334,7 +340,8 @@ def simulate_matchup(week_data: DataLoader,
                      replacement_players: dict[float],
                      week: int,
                      matchups: list[dict],
-                     projections: list[dict]) -> list[dict]:
+                     projections: list[dict],
+                     use_actuals: bool = True) -> list[dict]:
     """
     Simulate matchups of two teams
 
@@ -362,7 +369,8 @@ def simulate_matchup(week_data: DataLoader,
                                   replacement_players=replacement_players,
                                   projections=projections,
                                   week=week,
-                                  team_id=team1)
+                                  team_id=team1,
+                                  use_actuals=use_actuals)
         sim1 = simulate_lineup(lineup1)
 
         if 'team2' in m:
@@ -373,7 +381,8 @@ def simulate_matchup(week_data: DataLoader,
                                       replacement_players=replacement_players,
                                       projections=projections,
                                       week=week,
-                                      team_id=team2)
+                                      team_id=team2,
+                                      use_actuals=use_actuals)
             sim2 = simulate_lineup(lineup2)
 
             # redo sim if they are somehow tied
@@ -413,7 +422,8 @@ def simulate_week(week_data: DataLoader,
                   matchups: list,
                   projections: list[dict],
                   week: int,
-                  n_sims: int = 10) -> list:
+                  n_sims: int = 10,
+                  use_actuals: bool = True) -> list:
     """Simulate a week n_sims times and calculate number of occurrences for each category below"""
 
     # initialize counters
@@ -431,7 +441,8 @@ def simulate_week(week_data: DataLoader,
                                        replacement_players=replacement_players,
                                        week=week,
                                        matchups=matchups,
-                                       projections=projections)
+                                       projections=projections,
+                                       use_actuals=use_actuals)
 
         # update counters after simulation
         for team in matchup_sim:

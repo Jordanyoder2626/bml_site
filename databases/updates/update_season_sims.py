@@ -17,8 +17,8 @@ import pandas as pd
 warnings.filterwarnings("ignore", category=UserWarning)
 
 
-N_SIMS = 10
-RUN_WEEKS = [week for week in range(1, 15) if week != 3]
+N_SIMS = 100
+RUN_WEEKS = [week for week in range(1, 15)]
 
 
 def _set_sim_week(params: Params, week: int) -> Params:
@@ -178,6 +178,101 @@ def _playoff_context(data: DataLoader, params: Params, teams: Teams):
     return week_data, playoff_matchups, projections_df.to_dict(orient='records')
 
 
+def _sim_playoff_game(
+    team1: str,
+    team2: str,
+    week: int,
+    lineups: dict
+) -> str:
+    week_lineups = lineups.get(week, {})
+    lineup1 = week_lineups.get(team1)
+    lineup2 = week_lineups.get(team2)
+
+    if lineup1 is None:
+        return team2
+    if lineup2 is None:
+        return team1
+
+    score1 = simulations.simulate_lineup(lineup1)
+    score2 = simulations.simulate_lineup(lineup2)
+
+    while score1 == score2:
+        score1 = simulations.simulate_lineup(lineup1)
+        score2 = simulations.simulate_lineup(lineup2)
+
+    return team1 if score1 > score2 else team2
+
+
+def _simulate_bml_playoffs(
+    seeded_teams: list[str],
+    start_week: int,
+    lineups: dict
+) -> tuple[list[str], list[str]]:
+    """Simulate the BML 5-team playoff bracket.
+
+    Week 15: 4 seed vs 5 seed.
+    Week 16: 1 seed vs 4/5 winner, 2 seed vs 3 seed.
+    Week 17: championship game.
+    """
+    if len(seeded_teams) < 2:
+        return [], []
+
+    if start_week <= 15 and len(seeded_teams) >= 5:
+        play_in_winner = _sim_playoff_game(
+            seeded_teams[3],
+            seeded_teams[4],
+            week=15,
+            lineups=lineups
+        )
+        semifinalists = [
+            seeded_teams[0],
+            seeded_teams[1],
+            seeded_teams[2],
+            play_in_winner
+        ]
+    elif start_week <= 16:
+        semifinalists = seeded_teams[:4]
+    else:
+        finals_teams = seeded_teams[:2]
+        champion = [
+            _sim_playoff_game(
+                finals_teams[0],
+                finals_teams[1],
+                week=17,
+                lineups=lineups
+            )
+        ]
+        return finals_teams, champion
+
+    if len(semifinalists) < 4:
+        return [], []
+
+    finals_teams = [
+        _sim_playoff_game(
+            semifinalists[0],
+            semifinalists[3],
+            week=16,
+            lineups=lineups
+        ),
+        _sim_playoff_game(
+            semifinalists[1],
+            semifinalists[2],
+            week=16,
+            lineups=lineups
+        )
+    ]
+    champion = [
+        _sim_playoff_game(
+            finals_teams[0],
+            finals_teams[1],
+            week=17,
+            lineups=lineups
+        )
+    ]
+
+    return finals_teams, champion
+
+
 def _sim_one_iteration(
     params: Params,
     teams: Teams,
@@ -289,101 +384,11 @@ def _sim_one_iteration(
         if params.current_week <= params.regular_season_end
         else params.current_week
     )
-    champ_week = params.regular_season_end + 4
-    playoff_weeks_left = champ_week - start_week
-
-    sf_teams = []
-    finals_teams = []
-    champion = []
-
-    if playoff_weeks_left == 3:
-        sf_teams = simulations.sim_playoff_round(
-            week=15,
-            lineups=lineups,
-            n_bye=2,
-            round_teams=playoff_teams,
-            params=params,
-            replacement_players=replacement_players,
-            teams=teams
-        )
-        finals_teams = simulations.sim_playoff_round(
-            week=16,
-            lineups=lineups,
-            round_teams=sf_teams,
-            params=params,
-            replacement_players=replacement_players,
-            teams=teams
-        )
-        champion = simulations.sim_playoff_round(
-            week=17,
-            lineups=lineups,
-            round_teams=finals_teams,
-            params=params,
-            replacement_players=replacement_players,
-            teams=teams
-        )
-
-    if playoff_weeks_left == 2:
-        sf_teams = playoff_teams.copy()
-        finals_teams = simulations.sim_playoff_round(
-            week=16,
-            lineups=lineups,
-            round_teams=sf_teams,
-            params=params,
-            replacement_players=replacement_players,
-            week_data=week_data,
-            matchups=playoff_matchups,
-            projections=projections_dict,
-            rosters=rosters,
-            teams=teams
-        )
-        champion = simulations.sim_playoff_round(
-            week=17,
-            lineups=lineups,
-            round_teams=finals_teams,
-            params=params,
-            replacement_players=replacement_players,
-            teams=teams
-        )
-
-    if playoff_weeks_left == 1:
-        previous_week_data = data.load_week(week=params.current_week - 1)
-        semifinal_matchups = [
-            matchup
-            for matchup in previous_week_data['schedule']
-            if matchup['matchupPeriodId'] == 16
-            and matchup['playoffTierType'] == 'WINNERS_BRACKET'
-        ]
-        sf_teams = []
-        for matchup in semifinal_matchups:
-            sf_teams.append(
-                constants.TEAM_IDS[
-                    teams.teamid_to_primowner[
-                        matchup['home']['teamId']
-                    ]
-                ]['name']['display']
-            )
-            sf_teams.append(
-                constants.TEAM_IDS[
-                    teams.teamid_to_primowner[
-                        matchup['away']['teamId']
-                    ]
-                ]['name']['display']
-            )
-
-        finals_teams = playoff_teams.copy()
-        champion = simulations.sim_playoff_round(
-            week=17,
-            lineups=lineups,
-            round_teams=finals_teams,
-            params=params,
-            replacement_players=replacement_players,
-            week_data=week_data,
-            matchups=playoff_matchups,
-            projections=projections_dict,
-            rosters=rosters,
-            teams=teams
-        )
+    finals_teams, champion = _simulate_bml_playoffs(
+        seeded_teams=playoff_teams,
+        start_week=start_week,
+        lineups=lineups
+    )
 
     for team in team_names:
         sim_results[team]['ranks'] += sim_data[team]['ranks']

@@ -11,12 +11,17 @@ from datetime import datetime as dt
 import time
 
 
+def _db_probability(value: float) -> float:
+    """Fit probabilities into the current DECIMAL(4,4) betting_table columns."""
+    return min(max(value, 0), 0.9999)
+
+
 # TODO only run simulation if a roster move was made
 # load parameters
 week_sim_table = 'betting_table'
 week_sim_cols = constants.WEEK_SIM_COLUMNS
 day = dt.now().strftime('%a')
-n_sims = 10
+n_sims = 1000
 
 data = DataLoader(year=constants.SEASON)
 rosters = Rosters(year=constants.SEASON)
@@ -40,7 +45,8 @@ sim_scores, sim_wins, sim_tophalf, sim_highest, sim_lowest = simulations.simulat
                                                                                        matchups=matchups,
                                                                                        projections=projections_dict,
                                                                                        week=week,
-                                                                                       n_sims=n_sims)
+                                                                                       n_sims=n_sims,
+                                                                                       use_actuals=False)
 end = time.perf_counter()
 
 for team in teams.team_ids:
@@ -51,10 +57,10 @@ for team in teams.team_ids:
         db_id = f'{constants.SEASON}_{week:02d}_{display_name}'
     matchup_id = simulations.get_matchup_id(teams=teams, week=week, team_id=team)
     avg_score = sim_scores[team] / n_sims
-    p_win = sim_wins[team] / n_sims
-    p_tophalf = sim_tophalf[team] / n_sims
-    p_highest = sim_highest[team] / n_sims
-    p_lowest = sim_lowest[team] / n_sims
+    p_win = _db_probability(sim_wins[team] / n_sims)
+    p_tophalf = _db_probability(sim_tophalf[team] / n_sims)
+    p_highest = _db_probability(sim_highest[team] / n_sims)
+    p_lowest = _db_probability(sim_lowest[team] / n_sims)
     week_sim_vals = (db_id, constants.SEASON, week, matchup_id, display_name, avg_score, p_win, p_tophalf, p_highest, p_lowest)
     print(week_sim_vals)
     try:
