@@ -66,6 +66,12 @@ def _record_rows(df, category, record_col, holder_col='team'):
     ]
 
 
+def _season_record_rows(df, category, record_col, holder_col='team'):
+    row = _record_rows(df, category, record_col, holder_col=holder_col)
+    row[4] = ''
+    return row
+
+
 # ============================================================
 # ALL TIME STANDINGS
 # ============================================================
@@ -273,10 +279,10 @@ def get_standings_records(last_season):
     least_ppg = df[df.ppg == df.ppg.min()]
 
     return pd.DataFrame([
-        _record_rows(most_m_wins, 'Most Wins', 'm_wins'),
-        _record_rows(most_m_losses, 'Most Losses', 'm_losses'),
-        _record_rows(most_ppg, 'Highest PPG', 'ppg'),
-        _record_rows(least_ppg, 'Lowest PPG', 'ppg')
+        _season_record_rows(most_m_wins, 'Most Wins', 'm_wins'),
+        _season_record_rows(most_m_losses, 'Most Losses', 'm_losses'),
+        _season_record_rows(most_ppg, 'Highest PPG', 'ppg'),
+        _season_record_rows(least_ppg, 'Lowest PPG', 'ppg')
     ], columns=['category','record','holder','season','week'])
 
 def get_matchup_records(last_season):
@@ -384,8 +390,8 @@ def get_tophalf_records():
         most_losses = records[records.th_losses == records.th_losses.max()]
 
         return pd.DataFrame([
-            _record_rows(most_wins, 'Most Top Half Wins', 'th_wins'),
-            _record_rows(most_losses, 'Most Top Half Losses', 'th_losses')
+            _season_record_rows(most_wins, 'Most Top Half Wins', 'th_wins'),
+            _season_record_rows(most_losses, 'Most Top Half Losses', 'th_losses')
         ], columns=['category','record','holder','season','week'])
 
     except Exception as e:

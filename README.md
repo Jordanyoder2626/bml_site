@@ -9,8 +9,8 @@ After updating the database tables, generate a shareable static snapshot with:
 python -m scripts.export_static
 ```
 
-This writes the site to `dist/` and copies `static/` assets into `dist/static/`.
-Open `dist/index.html` locally or upload the `dist/` folder to a static host such as Netlify, Cloudflare Pages, or GitHub Pages.
+This writes the site to `docs/` and copies `static/` assets into `docs/static/`.
+GitHub Pages is built from `docs/`; open `docs/index.html` locally to preview the static site.
 
 # Power Ranking
 A combination of five factors are used to calcuate a weekly Power Score for each team, which is then normalized so that 100 is an average team. 

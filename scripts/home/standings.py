@@ -320,6 +320,90 @@ class Standings:
 
             return rows
 
+    def _bootyman_scenarios(self,
+                            team_name: str,
+                            scenario_type: str) -> list[Any]:
+
+        clinch_weeks_left = (
+            self.params.regular_season_end - self.week
+        )
+
+        data = league_rules.order_bootyman_standings(
+            records=self.standings_df.rename(
+                columns={
+                    'overall_wins': 'wins',
+                    'total_points': 'score'
+                }
+            ).to_dict(orient='records'),
+            wins_key='wins',
+            points_key='score'
+        )
+
+        data_tm = [
+            d for d in data
+            if d['team'] == team_name
+        ][0]
+
+        rows = []
+
+        if scenario_type == 'escape':
+            boundary_wins = data[1]['wins']
+
+            for wins in range(-1, 2):
+                new_wb = (
+                    (data_tm['wins'] - boundary_wins)
+                    + wins
+                )
+
+                if new_wb > clinch_weeks_left:
+                    escape_over_teams = ', '.join([
+                        f'{d["team"]}'
+                        for d in data
+                        if d['team'] != team_name
+                        and d['wins'] == boundary_wins
+                    ])
+
+                    row = [
+                        team_name,
+                        'Bootyman Bowl',
+                        wins,
+                        escape_over_teams,
+                        scenario_type
+                    ]
+
+                    if row[-2] not in utils.flatten_list(rows):
+                        rows.append(row)
+
+        if scenario_type == 'clinch':
+            boundary_wins = data[2]['wins']
+
+            for wins in reversed(range(-1, 2)):
+                new_wb = (
+                    (boundary_wins - data_tm['wins'])
+                    - wins
+                )
+
+                if new_wb > clinch_weeks_left:
+                    clinch_with_teams = ', '.join([
+                        f'{d["team"]}'
+                        for d in data
+                        if d['team'] != team_name
+                        and d['wins'] == boundary_wins
+                    ])
+
+                    row = [
+                        team_name,
+                        'Bootyman Bowl',
+                        wins,
+                        clinch_with_teams,
+                        scenario_type
+                    ]
+
+                    if row[-2] not in utils.flatten_list(rows):
+                        rows.append(row)
+
+        return rows
+
     def get_matchup_results(self,
                             week: int,
                             team_id: int) -> dict[str, Any]:
@@ -564,6 +648,7 @@ class Standings:
 
         clinch_rows = []
         elim_rows = []
+        bootyman_rows = []
 
         for team in self.teams.owner_ids:
 
@@ -589,6 +674,16 @@ class Standings:
                 seed=5
             )
 
+            bootyman_escapes = self._bootyman_scenarios(
+                team_name=tm,
+                scenario_type='escape'
+            )
+
+            bootyman_clinches = self._bootyman_scenarios(
+                team_name=tm,
+                scenario_type='clinch'
+            )
+
             if bye_clinches:
                 for bc_row in bye_clinches:
                     clinch_rows.append(bc_row)
@@ -605,10 +700,20 @@ class Standings:
                 for pe_row in playoffs_elims:
                     elim_rows.append(pe_row)
 
+            if bootyman_escapes:
+                for bb_row in bootyman_escapes:
+                    bootyman_rows.append(bb_row)
+
+            if bootyman_clinches:
+                for bb_row in bootyman_clinches:
+                    bootyman_rows.append(bb_row)
+
         clinch_rows.sort(key=lambda x: (x[0], x[1]))
         elim_rows.sort(key=lambda x: (x[0], x[1]))
+        bootyman_rows.sort(key=lambda x: (x[4], x[0]))
 
         return {
             'clinches': clinch_rows,
-            'eliminations': elim_rows
+            'eliminations': elim_rows,
+            'bootyman': bootyman_rows
         }

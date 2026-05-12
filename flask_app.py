@@ -29,6 +29,10 @@ def home():
     headings_el = tuple(el_cols) if clinches['eliminations'] else tuple()
     data_el = ut.flask_get_data(clinches['eliminations']) if clinches['eliminations'] else tuple()
 
+    bb_cols = ['Scenario', 'Probability']
+    headings_bb = tuple(bb_cols) if clinches['bootyman'] else tuple()
+    data_bb = ut.flask_get_data(clinches['bootyman']) if clinches['bootyman'] else tuple()
+
     headings_pr = tuple(['Team', 'Season', 'Recency', 'Consistency', 'Manager', 'Luck', 'Rank', '1 Week \u0394', 'Score', '1 Week \u0394'])
     data_pr = ut.flask_get_data(pr_table[pr_cols])
 
@@ -37,6 +41,7 @@ def home():
         headings_st=headings_st, data_st=data_st,
         headings_cl=headings_cl, data_cl=data_cl,
         headings_el=headings_el, data_el=data_el,
+        headings_bb=headings_bb, data_bb=data_bb,
         headings_pr=headings_pr, data_pr=data_pr,
         power_week=power_week_str,
         rank_data=rank_data
@@ -133,16 +138,32 @@ def champs():
                            headings_pc=headings_pc, data_pc=data_pc,
                            headings_cc=headings_cc, data_cc=data_cc)
 
+@app.route("/bootymen/")
+def bootymen():
+    headings_pb = tuple(prev_bootymen.columns)
+    data_pb = ut.flask_get_data(prev_bootymen)
+
+    headings_bc = tuple(bootyman_count.columns)
+    data_bc = ut.flask_get_data(bootyman_count)
+
+    return render_template("bootymen.html",
+                           headings_pb=headings_pb, data_pb=data_pb,
+                           headings_bc=headings_bc, data_bc=data_bc)
+
 @app.route("/records/")
 def records():
     headings_alltime = tuple(['Team', 'Seasons', 'Playoffs', 'Overall', 'Win%', 'Matchup', 'Top Half', 'Points'])
     data_alltime = ut.flask_get_data(alltime_df[ALLTIME_COLUMNS_FLASK])
+
+    headings_matchups = tuple(alltime_matchups_df.columns)
+    data_matchups = ut.flask_get_data(alltime_matchups_df)
 
     headings_rec = tuple(['Category', 'Record', 'Holder', 'Season', 'Week'])
     data_rec = ut.flask_get_data(records_df[RECORDS_COLUMNS_FLASK])
 
     return render_template("records.html",
                            headings_alltime=headings_alltime, data_alltime=data_alltime,
+                           headings_matchups=headings_matchups, data_matchups=data_matchups,
                            headings_rec=headings_rec, data_rec=data_rec)
 
 # Run app
