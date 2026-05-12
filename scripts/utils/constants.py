@@ -409,7 +409,7 @@ TEAM_IDS = {
             'first': 'Cade',
             'last': 'Smitherman',
             'display': 'Cade',
-            'team_name': 'Biarjo'
+            'team_name': 'Bijario'
         }
     },
     '{D62C1EF4-D8C6-4017-AC1E-F4D8C650177B}': {
