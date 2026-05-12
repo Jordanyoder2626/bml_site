@@ -114,6 +114,48 @@ def format_scenario_statements(rows: list[list], scenario_type: str) -> list[lis
     return formatted_rows
 
 
+def format_bootyman_scenario_statements(rows: list[list]) -> list[list]:
+    formatted_rows = []
+
+    for row in rows:
+        if len(row) < 6:
+            continue
+
+        team, _, net_wins, other_teams, bootyman_type, probability = row[:6]
+        if not _visible_probability(probability):
+            continue
+
+        display_team = display_team_name(team)
+        other_teams = _display_team_series(other_teams)
+
+        if bootyman_type == 'escape':
+            verb = _team_verb(display_team, 'escapes', 'escape')
+            if not other_teams:
+                condition = 'with a win' if int(net_wins) >= 1 else 'with this week\'s result'
+            elif int(net_wins) >= 1:
+                condition = f'with a win and a loss by {other_teams}'
+            elif int(net_wins) == 0:
+                condition = f'with the same result or better than {other_teams}'
+            else:
+                condition = f'even with a loss if {other_teams} wins'
+            statement = f'{display_team} {verb} the Bootyman Bowl {condition}.'
+        else:
+            verb = _team_verb(display_team, 'clinches', 'clinch')
+            if not other_teams:
+                condition = 'with a loss' if int(net_wins) < 0 else 'with this week\'s result'
+            elif int(net_wins) >= 1:
+                condition = f'even with a win and a loss by {other_teams}'
+            elif int(net_wins) == 0:
+                condition = f'with the same result or worse than {other_teams}'
+            else:
+                condition = f'with a loss and a win by {other_teams}'
+            statement = f'{display_team} {verb} a spot in the Bootyman Bowl {condition}.'
+
+        formatted_rows.append([statement, probability])
+
+    return formatted_rows
+
+
 season = constants.SEASON
 data = DataLoader(season)
 params = Params(data)
@@ -156,6 +198,7 @@ ps = PlayoffScenarios(data=data, params=params, teams=teams)
 show_clinch_scenarios = params.weeks_left <= 4
 bye_scens = ps.get_new_clinches(seed=2) if show_clinch_scenarios else {}
 playoff_scens = ps.get_new_clinches(seed=5) if show_clinch_scenarios else {}
+bootyman_scens = ps.get_new_bootyman_scenarios() if show_clinch_scenarios else {}
 magic_numbers = ps.get_magic_numbers()
 standings_df['bye_magic_number'] = standings_df['team'].map(lambda t: magic_numbers.get(t, {}).get('bye', None))
 standings_df['playoff_magic_number'] = standings_df['team'].map(lambda t: magic_numbers.get(t, {}).get('playoff', None))
@@ -169,7 +212,7 @@ standings_df['playoff_status'] = standings_df.apply(
 )
 
 if not show_clinch_scenarios:
-    clinches = {'clinches': [], 'eliminations': []}
+    clinches = {'clinches': [], 'eliminations': [], 'bootyman': []}
 
 def format_prob(p):
     if 0 < p <= 0.001:
@@ -208,6 +251,16 @@ for s in clinches['eliminations']:
         s.extend([prob])
 # TODO: fix last week clinches/elims. for wild card, net wins and probability should be blank (or save all sims to get prob of team getting outscored by x pts)
 
+for s in clinches['bootyman']:
+    try:
+        if s[4] == 'escape':
+            prob = format_prob(bootyman_scens[s[0]]['p_escape'])
+        else:
+            prob = format_prob(bootyman_scens[s[0]]['p_clinch'])
+    except KeyError:
+        prob = f'0.0%'
+    s.extend([prob])
+
 standings_df = display_team_values(standings_df, ['team'])
 clinches['clinches'] = format_scenario_statements(
     clinches['clinches'],
@@ -216,6 +269,9 @@ clinches['clinches'] = format_scenario_statements(
 clinches['eliminations'] = format_scenario_statements(
     clinches['eliminations'],
     scenario_type='eliminate'
+)
+clinches['bootyman'] = format_bootyman_scenario_statements(
+    clinches['bootyman']
 )
 
 

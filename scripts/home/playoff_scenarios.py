@@ -28,6 +28,14 @@ class PlayoffScenarios:
             playoff_teams=5
         )
 
+    @staticmethod
+    def _sort_bootyman_standings(standings: list[dict]) -> list[dict]:
+        return league_rules.order_bootyman_standings(
+            records=standings,
+            wins_key='wins',
+            points_key='score'
+        )
+
     def _load_standings(self) -> list[dict]:
         df = Database(
             table='matchups',
@@ -195,6 +203,81 @@ class PlayoffScenarios:
             team: result
             for team, result in results.items()
             if result['clinched'] > 0 or result['eliminated'] > 0
+        }
+
+    def get_bootyman_status(self, standings: list[dict]) -> tuple[list[str], list[str]]:
+        standings = self._sort_bootyman_standings(standings)
+        games_played = standings[0]['wins'] + standings[0]['losses']
+        weeks_left = self.params.regular_season_end - games_played
+
+        clinched = {}
+        escaped = {}
+        second_worst = standings[1]
+        third_worst = standings[2]
+
+        for team in standings:
+            clinched[team['team']] = (
+                third_worst['wins'] - team['wins'] > weeks_left
+            )
+            escaped[team['team']] = (
+                team['wins'] - second_worst['wins'] > weeks_left
+            )
+
+        return (
+            [team for team, value in clinched.items() if value],
+            [team for team, value in escaped.items() if value]
+        )
+
+    def get_new_bootyman_scenarios(self) -> dict:
+        clinched, escaped = self.get_bootyman_status(
+            standings=self.standings
+        )
+        results = {
+            name: {
+                'clinched': 0,
+                'escaped': 0,
+                'p_clinch': 0,
+                'p_escape': 0,
+                'clinch_scenarios': [],
+                'escape_scenarios': []
+            }
+            for name in self.team_names
+        }
+
+        for scenario in self.scenarios:
+            new_standings = []
+
+            for team in self.standings:
+                name = team['team']
+                new_wins = team['wins'] + scenario['matchup'][name]
+                new_standings.append({
+                    'team': name,
+                    'wins': new_wins,
+                    'losses': (self.params.as_of_week + 1) - new_wins,
+                    'score': round(team['score'], 2),
+                })
+
+            new_clinched, new_escaped = self.get_bootyman_status(
+                standings=new_standings
+            )
+            new_clinched = [team for team in new_clinched if team not in clinched]
+            new_escaped = [team for team in new_escaped if team not in escaped]
+
+            for team in self.team_names:
+                if team in new_clinched:
+                    results[team]['clinched'] += 1
+                    results[team]['p_clinch'] += scenario['p']
+                    results[team]['clinch_scenarios'].append(scenario)
+
+                if team in new_escaped:
+                    results[team]['escaped'] += 1
+                    results[team]['p_escape'] += scenario['p']
+                    results[team]['escape_scenarios'].append(scenario)
+
+        return {
+            team: result
+            for team, result in results.items()
+            if result['clinched'] > 0 or result['escaped'] > 0
         }
 
     def team_magic_number(self, team: str, playoff_spots: int) -> int | None:

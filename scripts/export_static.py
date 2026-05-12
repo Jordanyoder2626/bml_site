@@ -68,8 +68,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--output",
-        default="dist",
-        help="Output directory for the static site. Defaults to dist.",
+        default="docs",
+        help="Output directory for the static site. Defaults to docs.",
     )
     parser.add_argument(
         "--no-clean",

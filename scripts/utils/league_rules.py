@@ -84,3 +84,14 @@ def playoff_team_names(records: list[dict],
             playoff_teams=playoff_teams
         )[:playoff_teams]
     ]
+
+
+def order_bootyman_standings(records: list[dict],
+                             wins_key: str = 'wins',
+                             points_key: str = 'score') -> list[dict]:
+    active = [r for r in records if r['team'] in active_team_names()]
+
+    return sorted(
+        active,
+        key=lambda x: (x[wins_key], x[points_key])
+    )

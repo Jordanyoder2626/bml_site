@@ -29,6 +29,10 @@ def home():
     headings_el = tuple(el_cols) if clinches['eliminations'] else tuple()
     data_el = ut.flask_get_data(clinches['eliminations']) if clinches['eliminations'] else tuple()
 
+    bb_cols = ['Scenario', 'Probability']
+    headings_bb = tuple(bb_cols) if clinches['bootyman'] else tuple()
+    data_bb = ut.flask_get_data(clinches['bootyman']) if clinches['bootyman'] else tuple()
+
     headings_pr = tuple(['Team', 'Season', 'Recency', 'Consistency', 'Manager', 'Luck', 'Rank', '1 Week \u0394', 'Score', '1 Week \u0394'])
     data_pr = ut.flask_get_data(pr_table[pr_cols])
 
@@ -37,6 +41,7 @@ def home():
         headings_st=headings_st, data_st=data_st,
         headings_cl=headings_cl, data_cl=data_cl,
         headings_el=headings_el, data_el=data_el,
+        headings_bb=headings_bb, data_bb=data_bb,
         headings_pr=headings_pr, data_pr=data_pr,
         power_week=power_week_str,
         rank_data=rank_data
