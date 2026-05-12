@@ -7,22 +7,14 @@ from sshtunnel import SSHTunnelForwarder
 
 class Database:
     def __init__(self,
-                 data: dict|list|pd.DataFrame = None,
+                 data: dict | list | pd.DataFrame = None,
                  table: str = None,
-                 columns: str = None,
+                 columns: str | list = None,
                  values: tuple = None,
                  season: int = None,
                  week: int = None,
-                 use_ssh: bool = True):
-        """
-        Initializes a Database object
+                 use_ssh: bool = False):
 
-        Args:
-            data: the data object to be committed
-            table: name of the table in SQL
-            columns: columns of the table in SQL
-            values: table cell values to be commited
-        """
         self.connection = None
         self.data = data
         self.table = table
@@ -33,6 +25,10 @@ class Database:
         self.use_ssh = use_ssh
         self.tunnel = None
 
+    # =========================================================
+    # CONNECTION HANDLING
+    # =========================================================
+
     def __enter__(self):
         if self.use_ssh:
             self.tunnel = SSHTunnelForwarder(
@@ -42,6 +38,7 @@ class Database:
                 remote_bind_address=(constants.DB_MYSQL_HOST_SSH, 3306)
             )
             self.tunnel.start()
+
             self.connection = mysql.connector.connect(
                 host='127.0.0.1',
                 port=self.tunnel.local_bind_port,
@@ -49,6 +46,7 @@ class Database:
                 password=constants.DB_PASS_SSH,
                 database=constants.DB_NAME_SSH
             )
+
         else:
             self.connection = mysql.connector.connect(
                 host=constants.DB_HOST,
@@ -56,6 +54,7 @@ class Database:
                 password=constants.DB_PASS,
                 database=constants.DB_NAME
             )
+
         return self.connection
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -64,78 +63,140 @@ class Database:
         if self.tunnel:
             self.tunnel.stop()
 
+    # =========================================================
+    # DATA RETRIEVAL
+    # =========================================================
+
     def retrieve_data(self, how: str):
         if how == 'week':
-            query = f'''
-                    SELECT *
-                    FROM {self.table}
-                    WHERE season = {self.season}
-                        AND week = {self.week};
-                    '''
-        if how == 'season':
-            query = f'''
-                    SELECT *
-                    FROM {self.table}
-                    WHERE season = {self.season}
-                        AND week <= {self.week};
-                    '''
-        if how == 'all':
-            query = f'''
-                    SELECT *
-                    FROM {self.table};
-                    '''
+            query = f"""
+                SELECT *
+                FROM {self.table}
+                WHERE season = {self.season}
+                  AND week = {self.week};
+            """
+
+        elif how == 'season':
+            query = f"""
+                SELECT *
+                FROM {self.table}
+                WHERE season = {self.season}
+                  AND week <= {self.week};
+            """
+
+        elif how == 'all':
+            query = f"""
+                SELECT *
+                FROM {self.table};
+            """
+
         with self as conn:
             return pd.read_sql(query, conn)
 
+    # =========================================================
+    # INSERT QUERY
+    # =========================================================
+
     def sql_insert_query(self) -> str:
-        """Generate the SQL INSERT query for the specified table"""
-        query = f'''
-                INSERT INTO
-                {self.table}
-                    ({self.columns})
-                VALUES
-                    ({', '.join(('%s',) * len(self.columns.split(', ')))});
-                '''
+        """Generate INSERT query"""
+        cols = (
+            ", ".join(self.columns)
+            if isinstance(self.columns, (list, tuple))
+            else self.columns
+        )
+
+        placeholders = ", ".join(["%s"] * len(self.values))
+
+        query = f"""
+            INSERT INTO {self.table} ({cols})
+            VALUES ({placeholders});
+        """
         return query
 
+    # =========================================================
+    # 🔥 NEW: UPSERT QUERY (FIXES YOUR DUPLICATE ERRORS)
+    # =========================================================
+
+    def sql_upsert_query(self) -> str:
+        """Insert or update on duplicate key"""
+        cols = (
+            self.columns
+            if isinstance(self.columns, str)
+            else ", ".join(self.columns)
+        )
+
+        placeholders = ", ".join(["%s"] * len(self.values))
+
+        update_clause = ", ".join([
+            f"{col}=VALUES({col})"
+            for col in self.columns
+            if col != "id"
+        ])
+
+        query = f"""
+            INSERT INTO {self.table} ({cols})
+            VALUES ({placeholders})
+            ON DUPLICATE KEY UPDATE {update_clause};
+        """
+
+        self._query = query
+        return query
+
+    # =========================================================
+    # UPDATE SINGLE FIELD
+    # =========================================================
+
     def sql_update_table(self, set_column, new_value, id_column, id_value, season, week) -> str:
-        """Generate a SQL query to update a specific value"""
-        if type(id_value) == str:  # need to add quotes around value
+        if isinstance(id_value, str):
             query = f"""
                 UPDATE {self.table}
                 SET {set_column} = {new_value}
-                WHERE {id_column} = '{id_value}' AND season = {season} and week = {week}
+                WHERE {id_column} = '{id_value}'
+                  AND season = {season}
+                  AND week = {week}
             """
         else:
             query = f"""
                 UPDATE {self.table}
                 SET {set_column} = {new_value}
-                WHERE {id_column} = {id_value} AND season = {season} and week = {week}
+                WHERE {id_column} = {id_value}
+                  AND season = {season}
+                  AND week = {week}
             """
+
         with self as db:
             c = db.cursor()
             c.execute(query, self.values)
             db.commit()
 
+    # =========================================================
+    # COMMIT SINGLE ROW
+    # =========================================================
+
     def commit_row(self) -> None:
-        """Commit a row to the specified table"""
         with self as db:
             c = db.cursor()
             query = self.sql_insert_query()
             c.execute(query, self.values)
             db.commit()
 
+    # =========================================================
+    # COMMIT BULK DATA
+    # =========================================================
+
     def commit_data(self) -> None:
-        """Commit data to the database"""
         with self:
             if isinstance(self.data, dict):
-                for _, _ in self.data.items():
+                for _, v in self.data.items():
+                    self.values = v
                     self.commit_row()
 
-            if isinstance(self.data, list):
-                for _ in self.data:
+            elif isinstance(self.data, list):
+                for v in self.data:
+                    self.values = v
                     self.commit_row()
 
-            if isinstance(self.data, pd.DataFrame):
-                for _, _ in self.data.iterrows():
+            elif isinstance(self.data, pd.DataFrame):
+                for _, row in self.data.iterrows():
+                    self.values = tuple(row)
                     self.commit_row()

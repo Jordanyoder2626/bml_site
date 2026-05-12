@@ -1,4 +1,4 @@
-CREATE TABLE power_ranks (
+CREATE TABLE IF NOT EXISTS power_ranks (
     id VARCHAR(255) PRIMARY KEY,
     season INT,
     week INT,

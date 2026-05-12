@@ -29,6 +29,7 @@ _CURRENT_YEAR = dt.datetime.now().year
 _CURRENT_MONTH = dt.datetime.now().month
 # SEASON = _CURRENT_YEAR if _CURRENT_MONTH >= 9 else _CURRENT_YEAR-1
 SEASON = 2025
+CURRENT_WEEK = 13
 LEAGUE_ID = os.getenv('LEAGUE_ID')
 SWID = os.getenv('SWID')
 ESPN_S2 = os.getenv('ESPN_S2')
@@ -45,7 +46,7 @@ SEASON_SIM_COLUMNS = 'id, season, week, team, matchup_wins, tophalf_wins, total_
 RECORDS_COLUMNS = 'id, category, record, holder, season, week'
 ALLTIME_STANDINGS_COLUMNS = 'id, team, seasons, playoffs, overall_rec, win_perc, matchup_rec, tophalf_rec, points'
 
-STANDINGS_COLUMNS_FLASK = ['seed', 'team', 'overall', 'win_perc', 'matchup', 'top_half', 'total_points_disp', 'wb2_disp', 'wb5_disp', 'pb6_disp', 'bye_magic_number', 'playoff_magic_number']
+STANDINGS_COLUMNS_FLASK = ['seed', 'team', 'overall', 'division', 'win_perc', 'total_points_disp', 'wb2_disp', 'wb5_disp']
 RECORDS_COLUMNS_FLASK = ['category', 'record', 'holder', 'season', 'week']
 ALLTIME_COLUMNS_FLASK = ['team', 'seasons', 'playoffs', 'overall_rec', 'win_perc', 'matchup_rec', 'tophalf_rec', 'points']
 
@@ -348,128 +349,116 @@ PLAYER_STATS_MAP = {
 
 TEAM_IDS = {
     # add new teams here
-    '{04E660A8-5B4E-4B6C-AD79-AF6820D2904A}': {
+    '{000ADC3F-14C0-418C-83B4-56B1D0919383}': {
         'active': True,
         'name': {
-            'first': 'Aditya',
-            'last': 'Parikh',
-            'display': 'Adit'
+            'first': 'Caden',
+            'last': 'Bucknerrrrr',
+            'display': 'Caden',
+            'team_name': 'Gustavo'
         }
     },
-
-    '{107907DD-E9E2-426A-81C1-33FB7AA6983B}': {
+    '{089801F7-BA02-427B-9801-F7BA02B27B96}': {
+        'active': True,
+        'name': {
+            'first': 'Tripp',
+            'last': 'Winniford',
+            'display': 'Tripp',
+            'team_name': 'Riceism'
+        }
+    },
+    '{0D5E54B1-D7A2-4E3C-9E54-B1D7A26E3C78}': {
+        'active': True,
+        'name': {
+            'first': 'Jordan',
+            'last': 'Yoder',
+            'display': 'Jordan',
+            'team_name': 'The Warriors'
+        }
+    },
+    '{2B5B6A25-C8B8-45EB-9B6A-25C8B805EBAA}': {
+        'active': True,
+        'name': {
+            'first': 'Chase',
+            'last': 'Yoder',
+            'display': 'Chase',
+            'team_name': 'Moose Knuckle'
+        }
+    },
+    '{3E97B7E5-216F-42BC-9E34-E3DC4E002930}': {
+        'active': True,
+        'name': {
+            'first': 'Luke',
+            'last': 'Burnette',
+            'display': 'Luke',
+            'team_name': 'Mighty Acorns'
+        }
+    },
+    '{44E97B48-5469-4DA7-BA73-C431934CEB35}': {
+        'active': True,
+        'name': {
+            'first': 'thomas',
+            'last': 'mccartney',
+            'display': 'Rendle',
+            'team_name': 'Gruden\'s Grinders'
+        }
+    },
+    '{81B6CF9E-2070-4C7D-A481-4399C5DFD344}': {
+        'active': True,
+        'name': {
+            'first': 'Cade',
+            'last': 'Smitherman',
+            'display': 'Cade',
+            'team_name': 'Bijario'
+        }
+    },
+    '{D62C1EF4-D8C6-4017-AC1E-F4D8C650177B}': {
+        'active': True,
+        'name': {
+            'first': 'Landry',
+            'last': 'Droupy',
+            'display': 'Landry',
+            'team_name': 'droupymagic'
+        }
+    },
+    '{E6F4927B-0C19-425F-B492-7B0C19025FF4}': {
+        'active': True,
+        'name': {
+            'first': 'Quinn',
+            'last': 'McDermott',
+            'display': 'Quinn',
+            'team_name': "King's Landing"
+        }
+    },
+    '{FE034A7C-E6FD-4520-BB85-BA598ECB2746}': {
+        'active': True,
+        'name': {
+            'first': 'Leighton',
+            'last': 'Archer',
+            'display': 'Leighton',
+            'team_name': 'Kitty\'s Revenge'
+        }
+    
+    },
+    '{552ABD2B-331C-46EF-AABD-2B331C06EF2D}': 
+    {
         'active': False,
-        'name': {'first': 'Sharan',
-                 'last': 'Gottumukkala',
-                 'display': 'Shar'
-        }
-    },
-
-    '{127A0B03-FD89-4462-AE01-840A18124086}': {
-        'active': True,
         'name': {
-            'first': 'Ayaz',
-            'last': 'Ghesani',
-            'display': 'Ayaz'
+            'first': 'Chase',
+            'last': 'Yoder',
+            'display': 'Chase',  # or correct team name
+            'team_name': 'Moose Knuckle'
         }
     },
-
-    '{15FA7955-FCA6-4E11-8D73-9EB30DD67D0B}': {
+    '{C0284191-8F36-4640-BBA9-11596348CD1A}': 
+    {
         'active': False,
         'name': {
-            'first': 'Vikram',
-            'last': 'Kesavabhotla',
-            'display': 'Vikr'
-        }
-    },
-
-    '{2EA590DD-55F5-41CF-A29F-AC67B612265A}': {
-        'active': True,
-        'name': {
-            'first': 'Varun',
-            'last': 'Viswanathan',
-            'display': 'Varu'
-        }
-    },
-
-    '{377D02F0-6C7C-4333-9D4B-DAB9EDD9A44D}': {
-        'active': True,
-        'name': {
-            'first': 'Akshat',
-            'last': 'Rajan',
-            'display': 'Aksh'
-        }
-    },
-
-    '{89D51209-9763-4BC1-9512-0997634BC139}': {
-        'active': False,
-        'name': {
-            'first': 'Faizan',
-            'last': 'Khan',
-            'display': 'Faiz'
-        }
-    },
-
-    '{C152DDDA-D6A5-4B19-B4C8-3B60D3A5784F}': {
-        'active': False,
-        'name': {
-            'first': 'Harsh',
-            'last': 'Randhawa',
-            'display': 'Hars'
-        }
-    },
-
-    '{DFDE661C-852D-422F-99C9-0D06AD1B9B2D}': {
-        'active': True,
-        'name': {
-            'first': 'Charles',
-            'last': 'Cai',
-            'display': 'Char'
-        }
-    },
-
-    '{E01C2393-2E6F-420B-9C23-932E6F720B61}': {
-        'active': True,
-        'name': {
-            'first': 'Hirsh',
-            'last': 'Gupta',
-            'display': 'Hirs'
-        }
-    },
-
-    '{EB1CD420-9D9A-4649-873A-1A97DEFB5542}': {
-        'active': True,
-        'name': {
-            'first': 'Nick',
-            'last': 'Shekar',
-            'display': 'Nick'
-        }
-    },
-
-    '{FB094EC3-E4D2-4E81-AAA6-1D776B8259C7}': {
-        'active': True,
-        'name': {
-            'first': 'Aaron',
-            'last': 'Srikantha',
-            'display': 'Aaro'
-        }
-    },
-
-    '{95160076-FE63-41C0-9600-76FE63B1C0DD}': {
-        'active': True,
-        'name': {
-            'first': 'Arjun',
-            'last': 'Bains',
-            'display': 'Arju'
-        }
-    },
-
-    '{52EF6954-9BFF-4A41-9617-1ECD3F5EEBAF}': {
-        'active': True,
-        'name': {
-            'first': 'Aiden',
-            'last': 'Ghesani',
-            'display': 'Aide'
+            'first': 'Peyton',
+            'last': 'Yoder',
+            'display': 'Peyton'  # or correct team name
         }
     }
+    
+    
 }

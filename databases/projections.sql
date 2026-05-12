@@ -1,4 +1,4 @@
-CREATE TABLE player_projections (
+CREATE TABLE IF NOT EXISTS player_projections (
     id VARCHAR(255) PRIMARY KEY,
     season INT,
     week INT,

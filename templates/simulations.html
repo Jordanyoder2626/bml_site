@@ -51,7 +51,7 @@ table.center {
         </thead>
         <tbody>
         {% for row in data_s %}
-            <tr>
+            <tr class='{% if row[0] in ["King's Landing", "Gustavo", "The Warriors", "Gruden's Grinders", "Mighty Acorns"] %}division-east{% else %}division-west{% endif %}'>
                 {% for cell in row %}
                     <td>{{ cell }}</td>
                 {% endfor %}

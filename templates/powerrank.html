@@ -19,12 +19,11 @@ caption {font-size: small;}
 <div class="tscroll" style="overflow-x:auto;">
     <table class="table table-hover center content-table standings" style="margin-left: auto; margin-right: auto; width:60%">
         <caption>
-            WB-Weeks back of 2 and 5 seeds <br>
-            PB-Points back of 6 seed <br>
-            E#-Elimination Number, leading team wins + team losses needed to eliminate team <br>
-            c-Clinched bye or top 5 seed <br>
-            x-Eliminated from bye or top 5 seed <br>
-            Plus indicates team is ahead
+            GB-Games back of bye or playoff seed <br>
+            Seeds 1-2 are division winners; seeds 3-5 are wild cards <br>
+            c-Clinched bye or playoff spot <br>
+            x-Eliminated from bye or playoff spot <br>
+            Plus indicates the team is ahead of the cutoff
         </caption>
         <thead>
             <tr>
@@ -35,7 +34,7 @@ caption {font-size: small;}
         </thead>
         <tbody>
         {% for row in data_st %}
-            <tr>
+            <tr class='{% if row[1] in ["King's Landing", "Gustavo", "The Warriors", "Gruden's Grinders", "Mighty Acorns"] %}division-east{% else %}division-west{% endif %}'>
                 {% for cell in row %}
                     <td>{{ cell }}</td>
                 {% endfor %}
@@ -93,7 +92,7 @@ caption {font-size: small;}
 </div>
 <br>
 {% endif %}
-<h1>{{ week }} Power Rankings</h1>
+<h1>{{ power_week }} Power Rankings</h1>
 <div class="tscroll" style="overflow-x:auto;">
     <table class="table table-hover center content-table pr" style="table-layout:auto; width:60%">
         <caption>

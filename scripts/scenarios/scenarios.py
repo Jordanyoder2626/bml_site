@@ -111,8 +111,8 @@ def schedule_switcher(teams: Teams,
             # switch sched_of team with t_switch
             tm_sched = teams.team_schedule(team_switch)[week-1]
             score = tm_sched['score']
-            new_opp_tm = schedule_of_schedule['opp']
-            new_opp_score = schedule_of_schedule['opp_score']
+            new_opp_tm = schedule_of_schedule['opponent']
+            new_opp_score = schedule_of_schedule['opponent_score']
 
             # if team and new opp are the same, need to use actual schedule results
             if team_switch != new_opp_tm:

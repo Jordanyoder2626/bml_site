@@ -1,4 +1,4 @@
-CREATE TABLE schedule_switcher (
+CREATE TABLE IF NOT EXISTS schedule_switcher (
     id VARCHAR(24) PRIMARY KEY,
     season INT,
     week INT,
