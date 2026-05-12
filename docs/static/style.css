@@ -179,6 +179,18 @@ html {
 }
 /* end format all tables */
 
+.sim-table-sm {
+  min-width: 620px;
+}
+
+.sim-table-md {
+  min-width: 760px;
+}
+
+.sim-table-lg {
+  min-width: 900px;
+}
+
 
 /* group matchups in betting table */
 .betting tr:nth-child(odd){
