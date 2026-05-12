@@ -2,6 +2,16 @@
 
 League report for my personal Fantasy Football league, created using Python and Flask. Includes a power ranking, simulation results, what-if record scenarios, and team efficiency charts
 
+# Static Export
+After updating the database tables, generate a shareable static snapshot with:
+
+```bash
+python -m scripts.export_static
+```
+
+This writes the site to `dist/` and copies `static/` assets into `dist/static/`.
+Open `dist/index.html` locally or upload the `dist/` folder to a static host such as Netlify, Cloudflare Pages, or GitHub Pages.
+
 # Power Ranking
 A combination of five factors are used to calcuate a weekly Power Score for each team, which is then normalized so that 100 is an average team. 
 1. **Wins**: Total wins on the season.
