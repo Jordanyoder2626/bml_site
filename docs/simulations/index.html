@@ -1,0 +1,1703 @@
+<!doctype html>
+<html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=1180">
+      <link rel="shortcut icon" href="../static/logo_football.ico">
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous"/>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+      <link href="../static/style.css" type="text/css" rel="stylesheet"/>
+      <link href="../static/fontawesome/css/fontawesome.min.css?version=5.14.0" rel="stylesheet">
+<link href="../static/fontawesome/css/solid.min.css?version=5.14.0" rel="stylesheet">
+      <title>BML League Headquarters</title>
+      <script src="https://d3js.org/d3.v5.js"></script>
+     
+    </head>
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-custom nav-link nav-link-fade-up">
+          <div class="container-fluid">
+            <a class="navbar-brand" href="../index.html">
+                <!-- Add logo -->
+                <img src="../static/logo_text.png" alt="logo" width="109" height="45">
+                <!-- The Chill FFL -->
+            </a>
+            <button class="navbar-toggler ml-auto custom-toggler collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+              <span class="navbar-toggler-icon top-bar"></span>
+              <span class="navbar-toggler-icon middle-bar"></span>
+              <span class="navbar-toggler-icon bottom-bar"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+              <ul class="navbar-nav">
+                <li class="nav-item">
+                  <a class="nav-link" aria-current="page" href="../index.html"><i class="fa fa-bolt" aria-hidden="true"></i> Power Ranking</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../simulations/index.html"><i class="fa fa-calculator" aria-hidden="true"></i> Simulations</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../scenarios/index.html"><i class="fa fa-random" aria-hidden="true"></i> Scenarios</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../efficiency/index.html"><i class="fa fa-bullseye" aria-hidden="true"></i> Team Efficiency</a>
+                </li>
+                <li class="nav-item dropdown btn-group dropend">
+                  <a class="nav-link dropdown-toggle" href="#" id="navbarDarkDropdownMenuLink" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="fa fa-history" aria-hidden="true"></i>
+                     History
+                  </a>
+                  <ul class="dropdown-menu dropdown-menu-light" aria-labelledby="navbarLightDropdownMenuLink">
+                    <li>
+                      <a class="dropdown-item" href="../champions/index.html"><i class="fa fa-trophy" aria-hidden="true"></i> Champions</a>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="../bootymen/index.html"><i class="fa fa-poop" aria-hidden="true"></i> Hall of Bootymen</a>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="../records/index.html"><i class="fa fa-book-open" aria-hidden="true"></i> Records</a>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </nav>
+        
+<br>
+<style>
+h1 {text-align: center;}
+h3 {text-align: center;}
+p {text-align: center;}
+
+table.center {
+  margin-left: auto;
+  margin-right: auto;
+  vertical-align: middle;
+}
+</style>
+<p>All simulations are ran using each team's optimal lineup</p>
+<h1>Week 13 Betting Table</h1>
+<div class="tscroll" style="overflow-x:auto;">
+    <table class="table table-hover center content-table betting sim-table-sm" style="table-layout:auto; width:40%">
+        <caption><i>Updated: Monday, May 11 2026</i></caption>
+        <thead>
+            <tr>
+                
+                    <th>Team</th>
+                
+                    <th>Points</th>
+                
+                    <th>Matchup</th>
+                
+                    <th>TopHalf</th>
+                
+                    <th>Highest</th>
+                
+                    <th>Lowest</th>
+                
+            </tr>
+        </thead>
+        <tbody>
+        
+            <tr>
+                
+                    <td>Mighty Acorns</td>
+                
+                    <td>113.15</td>
+                
+                    <td>+220</td>
+                
+                    <td>+125</td>
+                
+                    <td>+1330</td>
+                
+                    <td>+760</td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td>Riceism</td>
+                
+                    <td>128.97</td>
+                
+                    <td>-220</td>
+                
+                    <td>-270</td>
+                
+                    <td>+375</td>
+                
+                    <td>+4445</td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td>Gruden's Grinders</td>
+                
+                    <td>113.70</td>
+                
+                    <td>+125</td>
+                
+                    <td>+125</td>
+                
+                    <td>+1075</td>
+                
+                    <td>+835</td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td>Gustavo</td>
+                
+                    <td>117.80</td>
+                
+                    <td>-125</td>
+                
+                    <td>-115</td>
+                
+                    <td>+930</td>
+                
+                    <td>+1270</td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td>Kitty's Revenge</td>
+                
+                    <td>113.47</td>
+                
+                    <td>+100</td>
+                
+                    <td>+110</td>
+                
+                    <td>+1180</td>
+                
+                    <td>+755</td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td>droupymagic</td>
+                
+                    <td>114.52</td>
+                
+                    <td>-100</td>
+                
+                    <td>+120</td>
+                
+                    <td>+955</td>
+                
+                    <td>+910</td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td>The Warriors</td>
+                
+                    <td>106.58</td>
+                
+                    <td>+170</td>
+                
+                    <td>+190</td>
+                
+                    <td>+1940</td>
+                
+                    <td>+380</td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td>King's Landing</td>
+                
+                    <td>116.09</td>
+                
+                    <td>-170</td>
+                
+                    <td>+100</td>
+                
+                    <td>+985</td>
+                
+                    <td>+1075</td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td>Bijario</td>
+                
+                    <td>112.50</td>
+                
+                    <td>+175</td>
+                
+                    <td>+125</td>
+                
+                    <td>+1105</td>
+                
+                    <td>+700</td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td>Moose Knuckle</td>
+                
+                    <td>122.97</td>
+                
+                    <td>-175</td>
+                
+                    <td>-175</td>
+                
+                    <td>+615</td>
+                
+                    <td>+2030</td>
+                
+            </tr>
+        
+        </tbody>
+    </table>
+</div>
+<br>
+<h1>Season Simulation Results</h1>
+<h3>Projected Standings</h3>
+<div class="tscroll" style="overflow-x:auto;">
+    <table class="table table-hover center content-table standings sim-table-sm" style="table-layout:auto; width:40%">
+        <caption><i>Updated: Monday, May 11 2026</i></caption>
+        <thead>
+            <tr>
+                
+                    <th>Team</th>
+                
+                    <th>Projected Wins</th>
+                
+                    <th>Projected Losses</th>
+                
+                    <th>Points</th>
+                
+                    <th>Playoff%</th>
+                
+                    <th>Finals%</th>
+                
+                    <th>Champion%</th>
+                
+            </tr>
+        </thead>
+        <tbody>
+        
+            <tr class='division-east'>
+                
+                    <td>Gustavo</td>
+                
+                    <td>9.1</td>
+                
+                    <td>4.9</td>
+                
+                    <td>1,700.0</td>
+                
+                    <td>100%</td>
+                
+                    <td>66%</td>
+                
+                    <td>23%</td>
+                
+            </tr>
+        
+            <tr class='division-west'>
+                
+                    <td>Kitty&#39;s Revenge</td>
+                
+                    <td>8.8</td>
+                
+                    <td>5.2</td>
+                
+                    <td>1,462.5</td>
+                
+                    <td>100%</td>
+                
+                    <td>37%</td>
+                
+                    <td>16%</td>
+                
+            </tr>
+        
+            <tr class='division-west'>
+                
+                    <td>droupymagic</td>
+                
+                    <td>8.2</td>
+                
+                    <td>5.8</td>
+                
+                    <td>1,648.7</td>
+                
+                    <td>95%</td>
+                
+                    <td>52%</td>
+                
+                    <td>30%</td>
+                
+            </tr>
+        
+            <tr class='division-east'>
+                
+                    <td>Gruden&#39;s Grinders</td>
+                
+                    <td>7.9</td>
+                
+                    <td>6.1</td>
+                
+                    <td>1,563.9</td>
+                
+                    <td>82%</td>
+                
+                    <td>12%</td>
+                
+                    <td>6%</td>
+                
+            </tr>
+        
+            <tr class='division-west'>
+                
+                    <td>Riceism</td>
+                
+                    <td>7.4</td>
+                
+                    <td>6.6</td>
+                
+                    <td>1,725.9</td>
+                
+                    <td>84%</td>
+                
+                    <td>22%</td>
+                
+                    <td>17%</td>
+                
+            </tr>
+        
+            <tr class='division-west'>
+                
+                    <td>Moose Knuckle</td>
+                
+                    <td>7.1</td>
+                
+                    <td>6.9</td>
+                
+                    <td>1,629.5</td>
+                
+                    <td>39%</td>
+                
+                    <td>11%</td>
+                
+                    <td>8%</td>
+                
+            </tr>
+        
+            <tr class='division-west'>
+                
+                    <td>Bijario</td>
+                
+                    <td>5.9</td>
+                
+                    <td>8.1</td>
+                
+                    <td>1,604.8</td>
+                
+                    <td>0%</td>
+                
+                    <td>0%</td>
+                
+                    <td>0%</td>
+                
+            </tr>
+        
+            <tr class='division-east'>
+                
+                    <td>Mighty Acorns</td>
+                
+                    <td>5.6</td>
+                
+                    <td>8.4</td>
+                
+                    <td>1,431.7</td>
+                
+                    <td>0%</td>
+                
+                    <td>0%</td>
+                
+                    <td>0%</td>
+                
+            </tr>
+        
+            <tr class='division-east'>
+                
+                    <td>King&#39;s Landing</td>
+                
+                    <td>5.3</td>
+                
+                    <td>8.7</td>
+                
+                    <td>1,436.7</td>
+                
+                    <td>0%</td>
+                
+                    <td>0%</td>
+                
+                    <td>0%</td>
+                
+            </tr>
+        
+            <tr class='division-east'>
+                
+                    <td>The Warriors</td>
+                
+                    <td>4.7</td>
+                
+                    <td>9.3</td>
+                
+                    <td>1,453.6</td>
+                
+                    <td>0%</td>
+                
+                    <td>0%</td>
+                
+                    <td>0%</td>
+                
+            </tr>
+        
+        </tbody>
+    </table>
+</div>
+<br>
+<h3>Rank Distribution</h3>
+<p>Percentage of simulations where team finished in <i>nth</i> place</p>
+<div class="tscroll" style="overflow-x:auto;">
+    <table class="table table-hover center content-table vert sim-table-md" style="table-layout:auto; width:60%">
+        <thead>
+            <tr>
+                
+                    <th>Team</th>
+                
+                    <th>1</th>
+                
+                    <th>2</th>
+                
+                    <th>3</th>
+                
+                    <th>4</th>
+                
+                    <th>5</th>
+                
+                    <th>6</th>
+                
+                    <th>7</th>
+                
+                    <th>8</th>
+                
+                    <th>9</th>
+                
+                    <th>10</th>
+                
+            </tr>
+        </thead>
+        <tbody>
+        
+            <tr>
+                
+                    <td><!-- style="">-->
+                        
+                            Gustavo
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 35.0);">-->
+                        
+                            35%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 65.0);">-->
+                        
+                            65%
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td><!-- style="">-->
+                        
+                            Kitty&#39;s Revenge
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 30.0);">-->
+                        
+                            30%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 1.0);">-->
+                        
+                            1%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 69.0);">-->
+                        
+                            69%
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td><!-- style="">-->
+                        
+                            droupymagic
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 35.0);">-->
+                        
+                            35%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 34.0);">-->
+                        
+                            34%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 30.0);">-->
+                        
+                            30%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 1.0);">-->
+                        
+                            1%
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td><!-- style="">-->
+                        
+                            Gruden&#39;s Grinders
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 1.0);">-->
+                        
+                            1%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 30.0);">-->
+                        
+                            30%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 69.0);">-->
+                        
+                            69%
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td><!-- style="">-->
+                        
+                            Riceism
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 1.0);">-->
+                        
+                            1%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 98.0);">-->
+                        
+                            98%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 1.0);">-->
+                        
+                            1%
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td><!-- style="">-->
+                        
+                            Moose Knuckle
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 69.0);">-->
+                        
+                            69%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 27.0);">-->
+                        
+                            27%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 4.0);">-->
+                        
+                            4%
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td><!-- style="">-->
+                        
+                            Bijario
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 4.0);">-->
+                        
+                            4%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 48.0);">-->
+                        
+                            48%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 23.0);">-->
+                        
+                            23%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 25.0);">-->
+                        
+                            25%
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td><!-- style="">-->
+                        
+                            Mighty Acorns
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 14.0);">-->
+                        
+                            14%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 32.0);">-->
+                        
+                            32%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 19.0);">-->
+                        
+                            19%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 35.0);">-->
+                        
+                            35%
+                        
+                    </td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td><!-- style="">-->
+                        
+                            King&#39;s Landing
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 10.0);">-->
+                        
+                            10%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 18.0);">-->
+                        
+                            18%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 7.0);">-->
+                        
+                            7%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 65.0);">-->
+                        
+                            65%
+                        
+                    </td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td><!-- style="">-->
+                        
+                            The Warriors
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 24.0);">-->
+                        
+                            24%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 27.0);">-->
+                        
+                            27%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 49.0);">-->
+                        
+                            49%
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+            </tr>
+        
+        </tbody>
+    </table>
+</div>
+<br>
+<h3>Wins Distribution</h3>
+<p>Percentage of simulations where team finished with <i>n</i> wins</p>
+<div class="tscroll" style="overflow-x:auto;">
+    <table class="table table-hover center content-table vert sim-table-lg" style="table-layout:auto; width:70%">
+        <thead>
+            <tr>
+                
+                    <th>Team</th>
+                
+                    <th>4</th>
+                
+                    <th>5</th>
+                
+                    <th>6</th>
+                
+                    <th>7</th>
+                
+                    <th>8</th>
+                
+                    <th>9</th>
+                
+            </tr>
+        </thead>
+        <tbody>
+        
+            <tr>
+                
+                    <td><!-- style="">-->
+                        
+                            Gustavo
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 51.0);">-->
+                        
+                            51%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 49.0);">-->
+                        
+                            49%
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td><!-- style="">-->
+                        
+                            Kitty&#39;s Revenge
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 70.0);">-->
+                        
+                            70%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 30.0);">-->
+                        
+                            30%
+                        
+                    </td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td><!-- style="">-->
+                        
+                            droupymagic
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 2.0);">-->
+                        
+                            2%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 98.0);">-->
+                        
+                            98%
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td><!-- style="">-->
+                        
+                            Gruden&#39;s Grinders
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 98.0);">-->
+                        
+                            98%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 2.0);">-->
+                        
+                            2%
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td><!-- style="">-->
+                        
+                            Riceism
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 52.0);">-->
+                        
+                            52%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 48.0);">-->
+                        
+                            48%
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td><!-- style="">-->
+                        
+                            Moose Knuckle
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 30.0);">-->
+                        
+                            30%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 70.0);">-->
+                        
+                            70%
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td><!-- style="">-->
+                        
+                            Bijario
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 48.0);">-->
+                        
+                            48%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 52.0);">-->
+                        
+                            52%
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td><!-- style="">-->
+                        
+                            Mighty Acorns
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 35.0);">-->
+                        
+                            35%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 65.0);">-->
+                        
+                            65%
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td><!-- style="">-->
+                        
+                            King&#39;s Landing
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 65.0);">-->
+                        
+                            65%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 35.0);">-->
+                        
+                            35%
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+            </tr>
+        
+            <tr>
+                
+                    <td><!-- style="">-->
+                        
+                            The Warriors
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 49.0);">-->
+                        
+                            49%
+                        
+                    </td>
+                
+                    <td><!-- style="background-color: rgba(255, 0, 0, 51.0);">-->
+                        
+                            51%
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+                    <td><!-- style="">-->
+                        
+                            
+                        
+                    </td>
+                
+            </tr>
+        
+        </tbody>
+    </table>
+</div>
+
+    </body>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js" integrity="sha384-b5kHyXgcpbZJO/tY9Ul7kGkf1S0CWuKcCD38l8YkeH8z8QjE0GmW1gYU5S9FOnJ0" crossorigin="anonymous"></script>
+</html>
