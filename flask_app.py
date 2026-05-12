@@ -33,8 +33,9 @@ def home():
     headings_bb = tuple(bb_cols) if clinches['bootyman'] else tuple()
     data_bb = ut.flask_get_data(clinches['bootyman']) if clinches['bootyman'] else tuple()
 
+    show_power_rankings = not pr_table.empty
     headings_pr = tuple(['Team', 'Season', 'Recency', 'Consistency', 'Manager', 'Luck', 'Rank', '1 Week \u0394', 'Score', '1 Week \u0394'])
-    data_pr = ut.flask_get_data(pr_table[pr_cols])
+    data_pr = ut.flask_get_data(pr_table[pr_cols]) if show_power_rankings else tuple()
 
     return render_template(
         "powerrank.html", week=week_str,
@@ -43,6 +44,7 @@ def home():
         headings_el=headings_el, data_el=data_el,
         headings_bb=headings_bb, data_bb=data_bb,
         headings_pr=headings_pr, data_pr=data_pr,
+        show_power_rankings=show_power_rankings,
         power_week=power_week_str,
         rank_data=rank_data
     )

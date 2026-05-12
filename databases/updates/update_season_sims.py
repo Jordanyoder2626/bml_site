@@ -477,8 +477,7 @@ def _build_result_frames(
 
         for wins in range(0, params.regular_season_end + 1):
             prob = len(temp[temp.total_wins == wins]) / N_SIMS
-            if prob > 0:
-                wins_rows.append([team, wins, prob])
+            wins_rows.append([team, wins, prob])
 
     wins_prob_df = pd.DataFrame(wins_rows, columns=['team', 'wins', 'p'])
     wins_prob_df['season'] = constants.SEASON
@@ -502,6 +501,16 @@ def _build_result_frames(
         .rename(columns={'simulation': 'p'})
     )
     ranks_prob_df['p'] = ranks_prob_df.p / N_SIMS
+    rank_index = pd.MultiIndex.from_product(
+        [team_names, range(1, len(team_names) + 1)],
+        names=['team', 'ranks']
+    )
+    ranks_prob_df = (
+        ranks_prob_df
+        .set_index(['team', 'ranks'])
+        .reindex(rank_index, fill_value=0)
+        .reset_index()
+    )
     ranks_prob_df['season'] = constants.SEASON
     ranks_prob_df['week'] = params.current_week
     ranks_prob_df['id'] = (
@@ -625,10 +634,7 @@ def run_week(sim_week: int) -> None:
     team_names = _active_team_names(teams)
 
     results = _load_actual_results(params=params)
-    week_sim = _load_current_week_sim(params=params)
-    if not week_sim.empty:
-        lineups.pop(params.current_week, None)
-    to_add = results.add(week_sim, fill_value=0)
+    to_add = results
 
     week_data, playoff_matchups, projections_dict = _playoff_context(
         data=data,

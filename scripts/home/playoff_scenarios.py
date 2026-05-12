@@ -65,10 +65,11 @@ class PlayoffScenarios:
                 season=self.season,
                 week=self.params.current_week
             )
-            .retrieve_data(how='season')
+            .retrieve_data(how='week')
             .sort_values('created')
-            .tail(len(self.team_names))
         )
+        if not df.empty:
+            df = df.groupby('team', as_index=False).tail(1)
         df = df[df.team.isin(self.team_names)]
         return df[['team', 'matchup_id', 'p_win']].to_dict(orient='records')
 
@@ -216,6 +217,9 @@ class PlayoffScenarios:
 
     def get_bootyman_status(self, standings: list[dict]) -> tuple[list[str], list[str]]:
         standings = self._sort_bootyman_standings(standings)
+        if len(standings) < 3:
+            return [], []
+
         games_played = standings[0]['wins'] + standings[0]['losses']
         weeks_left = self.params.regular_season_end - games_played
 
@@ -238,6 +242,9 @@ class PlayoffScenarios:
         )
 
     def get_new_bootyman_scenarios(self) -> dict:
+        if not self.standings or not self.scenarios:
+            return {}
+
         clinched, escaped = self.get_bootyman_status(
             standings=self.standings
         )

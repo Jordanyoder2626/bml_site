@@ -41,7 +41,12 @@ table.center {
 <h3>Projected Standings</h3>
 <div class="tscroll" style="overflow-x:auto;">
     <table class="table table-hover center content-table standings sim-table-sm" style="table-layout:auto; width:40%">
-        <caption><i>Updated: {{ tstamp_s }}</i></caption>
+        <caption>
+            <i>Updated: {{ tstamp_s }}</i><br>
+            Divisions:
+            <span class="division-key-item"><span class="division-key-swatch division-key-east"></span>East</span>
+            <span class="division-key-item"><span class="division-key-swatch division-key-west"></span>West</span>
+        </caption>
         <thead>
             <tr>
                 {% for header in headings_s %}

@@ -119,6 +119,34 @@ html {
   background-color: rgba(13, 22, 65, 0.11);
 }
 
+.division-key {
+  margin: 6px auto 0 auto;
+  text-align: center;
+  font-size: 0.9em;
+}
+
+.division-key-item {
+  display: inline-block;
+  margin: 0 4px;
+}
+
+.division-key-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 4px;
+  border: 1px solid #cfcfcf;
+  vertical-align: -2px;
+}
+
+.division-key-east {
+  background-color: rgba(14, 176, 75, 0.12);
+}
+
+.division-key-west {
+  background-color: rgba(13, 22, 65, 0.11);
+}
+
 .standings tbody tr:nth-child(5){
   border-bottom: 3px solid #606060;
 }

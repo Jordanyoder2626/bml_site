@@ -353,10 +353,11 @@ completed_week = max(min(params.as_of_week, params.regular_season_end), 0)
 db_pr = Database(table='power_ranks', season=season, week=power_data_week)
 betting_table = (
     Database(table='betting_table', season=season, week=params.current_week)
-    .retrieve_data(how='season')  # show previous week on Tues
+    .retrieve_data(how='week')
     .sort_values('created')
-    .tail(n_teams)  # most recent db updates
 )
+if not betting_table.empty:
+    betting_table = betting_table.groupby('team', as_index=False).tail(1)
 season_sim_table = (
     Database(table='season_sim', season=season, week=week).
     retrieve_data(how='season')
@@ -472,17 +473,22 @@ clinches['bootyman'] = format_bootyman_scenario_statements(
 
 
 pr_data = db_pr.retrieve_data(how='season')
-pr_data[['power_score_norm', 'score_norm_change']] = round(pr_data[['power_score_norm', 'score_norm_change']] * 100).astype('Int32')
-pr_table = pr_data[pr_data.week == power_data_week]
-pr_table = pr_table.sort_values('power_score_raw', ascending=False)
-pr_table['rank_change'] = -pr_table.rank_change
-pr_table[['total_points', 'weekly_points', 'consistency', 'manager', 'luck']] = pr_table[['season_idx', 'week_idx', 'consistency_idx', 'manager_idx', 'luck_idx']].rank(ascending=False, method='min').astype('Int32')
 pr_cols = ['team', 'total_points', 'weekly_points', 'consistency', 'manager', 'luck', 'power_rank', 'rank_change', 'power_score_norm', 'score_norm_change']
-pr_table = display_team_values(pr_table, ['team'])
-pr_data = display_team_values(pr_data, ['team'])
-rank_data = pr_data[['team', 'week', 'power_rank', 'power_score_norm']].sort_values(['week', 'power_score_norm'], ascending=[True, False]).to_dict(orient='records')
-rank_data = json.dumps(rank_data, indent=2)
-rank_data = {'rank_data': rank_data}
+rank_cols = ['team', 'week', 'power_rank', 'power_score_norm']
+if pr_data.empty:
+    pr_table = pd.DataFrame(columns=pr_cols)
+    rank_data = {'rank_data': '[]'}
+else:
+    pr_data[['power_score_norm', 'score_norm_change']] = round(pr_data[['power_score_norm', 'score_norm_change']] * 100).astype('Int32')
+    pr_table = pr_data[pr_data.week == power_data_week]
+    pr_table = pr_table.sort_values('power_score_raw', ascending=False)
+    pr_table['rank_change'] = -pr_table.rank_change
+    pr_table[['total_points', 'weekly_points', 'consistency', 'manager', 'luck']] = pr_table[['season_idx', 'week_idx', 'consistency_idx', 'manager_idx', 'luck_idx']].rank(ascending=False, method='min').astype('Int32')
+    pr_table = display_team_values(pr_table, ['team'])
+    pr_data = display_team_values(pr_data, ['team'])
+    rank_data = pr_data[rank_cols].sort_values(['week', 'power_score_norm'], ascending=[True, False]).to_dict(orient='records')
+    rank_data = json.dumps(rank_data, indent=2)
+    rank_data = {'rank_data': rank_data}
 
 
 # SIMULATIONS PAGE
@@ -490,7 +496,7 @@ if betting_table.empty:
     timestamp_betting = 'No data'
     betting_table = pd.DataFrame(columns=['team', 'avg_score', 'p_win', 'p_tophalf', 'p_highest', 'p_lowest'])
 else:
-    timestamp_betting = pd.to_datetime(betting_table.created.values[0]).strftime("%A, %b %d %Y")
+    timestamp_betting = pd.to_datetime(betting_table.created.max()).strftime("%A, %b %d %Y")
     betting_table = betting_table.sort_values(['matchup_id', 'avg_score'])
     betting_table['avg_score'] = betting_table.avg_score.round(2).apply(lambda x: f'{x:.2f}')
     betting_table['p_win'] = betting_table.p_win.apply(lambda x: simulations.calculate_odds(init_prob=x))

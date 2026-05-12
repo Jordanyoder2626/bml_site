@@ -119,6 +119,8 @@ def query_projections_db(season: int,
         '''
         c.execute(query)
         result = c.fetchall()
+        if not result:
+            return pd.DataFrame(columns=['name', 'espn_id', 'projection'])
         df = pd.DataFrame(result)
         df.columns = cols
     return df[['name', 'espn_id', 'projection']]
