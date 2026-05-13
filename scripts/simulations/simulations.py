@@ -86,6 +86,9 @@ def get_week_projections(week: int) -> pd.DataFrame:
     projections['season'] = constants.SEASON
     projections['week'] = week
     projections.columns = [c.lower() for c in projections.columns]
+    projections['fpts'] = pd.to_numeric(projections['fpts'], errors='coerce')
+    projections['rec'] = pd.to_numeric(projections['rec'], errors='coerce').fillna(0)
+    projections = projections.dropna(subset=['fpts'])
 
     qb_mask = (projections.position == 'QB') & (projections.fpts > 10)
     rb_mask = (projections.position == 'RB') & (projections.fpts > 5)
@@ -99,6 +102,9 @@ def get_week_projections(week: int) -> pd.DataFrame:
     projections['id'] = (projections.player.str.replace(r'[^a-zA-Z0-9]', '', regex=True)
                          + '_' + projections.season.astype(str)
                          + '_' + projections.week.astype(str).str.zfill(2))
+    if projections.empty:
+        projections['espn_id'] = pd.Series(dtype='Int64')
+        return projections
 
     projections['espn_id'] = projections.apply(
         lambda x: _match_player_to_espn(x['match_on'], players), axis=1
@@ -109,7 +115,6 @@ def get_week_projections(week: int) -> pd.DataFrame:
 
 def query_projections_db(season: int,
                          week: int) -> pd.DataFrame:
-    cols = ['id', 'season', 'week', 'name', 'espn_id', 'position', 'receptions', 'projection', 'created']
     with Database() as conn:
         c = conn.cursor()
         query = f'''
@@ -119,8 +124,10 @@ def query_projections_db(season: int,
         '''
         c.execute(query)
         result = c.fetchall()
+        if not result:
+            return pd.DataFrame(columns=['name', 'espn_id', 'projection'])
         df = pd.DataFrame(result)
-        df.columns = cols
+        df.columns = [col[0] for col in c.description]
     return df[['name', 'espn_id', 'projection']]
 
 
@@ -548,7 +555,7 @@ def get_ros_projections(data: DataLoader,
     """Get rest of season projections from ESPN for all rostered players"""
 
     projections_dict = {}
-    for week in range(params.current_week, 17+1):  # next week (already simmed current week) to end of playoffs+1
+    for week in range(params.current_week, 17+1):
         week_data = data.load_week(week)
         team_dict = {}
         for team in week_data['teams']:

@@ -38,6 +38,19 @@ def get_total_wins(h2h_data: pd.DataFrame,
     """
     end = week-1
 
+    team_names = [
+        const.TEAM_IDS[teams.teamid_to_primowner[team_id]]['name']['display']
+        for team_id in teams.team_ids
+    ]
+
+    if h2h_data.empty:
+        return pd.DataFrame({
+            'team': team_names,
+            'result': 0,
+            'record': '0-0',
+            'win_perc': '0.000'
+        })
+
     total_wins = h2h_data.groupby('team').result.sum().reset_index()
     total_wins['losses'] = (((len(teams.team_ids)-1) * end) - total_wins.result)
     total_wins['record'] = total_wins.result.astype('Int32').astype(str) + '-' + total_wins.losses.astype('Int32').astype(str)
@@ -52,6 +65,12 @@ def get_wins_by_week(h2h_data: pd.DataFrame,
     """
     Calculate team's record vs league median for each week
     """
+    if h2h_data.empty:
+        out = total_wins[['team']].copy()
+        out['weeks_best'] = '0'
+        out['weeks_worst'] = '0'
+        return out
+
     wins_by_week = h2h_data.groupby(['team', 'week']).result.sum().reset_index()
     wins_by_week['losses'] = (len(teams.team_ids) -1) - wins_by_week.result
     wins_by_week['record'] = wins_by_week.result.astype('Int32').astype(str) + '-' + wins_by_week.losses.astype('Int32').astype(str)
@@ -75,6 +94,22 @@ def get_wins_vs_opp(h2h_data: pd.DataFrame,
     Calculate team's record if he played every team each week
     """
     end = week-1
+
+    if h2h_data.empty:
+        teams_list = total_wins.team.to_list()
+        wins_vs_opp_final = pd.DataFrame(
+            '0-0',
+            index=teams_list,
+            columns=teams_list
+        )
+        for team in teams_list:
+            wins_vs_opp_final.loc[team, team] = ''
+        wins_vs_opp_final = wins_vs_opp_final.reset_index().rename(columns={'index': 'team'})
+        return pd.merge(
+            wins_vs_opp_final,
+            total_wins[['team', 'record', 'win_perc']],
+            on='team'
+        )
 
     wins_vs_opp = h2h_data.groupby(['team', 'opponent']).result.sum().reset_index()
     wins_vs_opp['losses'] = end - wins_vs_opp.result
@@ -131,6 +166,9 @@ def calculate_schedule_luck(ss_data: pd.DataFrame):
     Calculate each team's schedule luck: difference of a teams' actual matchup wins and the average number of wins using all other schedules.
     Positive values indicate team is luckier
     """
+    if ss_data.empty:
+        return {}
+
     teams = set(ss_data.team)
     luck = {}
     for t in teams:
@@ -149,6 +187,17 @@ def get_schedule_switcher_display(ss_data: pd.DataFrame,
     Format schedule switcher table for display on website.
     """
     end = week-1
+
+    if ss_data.empty:
+        teams_list = total_wins.team.to_list()
+        ss_data_final = pd.DataFrame(
+            '0-0',
+            index=teams_list,
+            columns=teams_list
+        )
+        for team in teams_list:
+            ss_data_final.loc[team, team] = '<span class="diagonal">0-0</span>'
+        return ss_data_final.reset_index().rename(columns={'index': 'team'})
 
     ss_data = ss_data.groupby(['team', 'schedule_of']).result.sum().reset_index()
     ss_data['losses'] = end - ss_data.result

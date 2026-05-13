@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from datetime import datetime as dt
 
 import pandas as pd
@@ -24,6 +25,79 @@ MANAGER_TO_TEAM_NAME = {
 
 def display_team_name(name: str) -> str:
     return MANAGER_TO_TEAM_NAME.get(name, name)
+
+
+def manager_display_name(team_id: int) -> str:
+    owner_id = teams.teamid_to_primowner[team_id]
+    return constants.TEAM_IDS[owner_id]['name']['display']
+
+
+def team_display_name(team_id: int) -> str:
+    return display_team_name(manager_display_name(team_id))
+
+
+def _format_score(score) -> str:
+    return f'{float(score):.2f}'
+
+
+def _logo_path(manager_name: str) -> str:
+    logo_dir = Path('logos')
+    matches = sorted(logo_dir.glob(f'{manager_name}.*'))
+    if not matches:
+        exact = logo_dir / manager_name
+        matches = [exact] if exact.exists() else []
+    return f'logos/{matches[0].name}' if matches else ''
+
+
+def _team_card_from_team_id(team_id: int) -> dict:
+    manager = manager_display_name(team_id)
+    return {
+        'manager': manager,
+        'team': team_display_name(team_id),
+        'logo': _logo_path(manager)
+    }
+
+
+def _team_card_from_manager(manager: str) -> dict:
+    return {
+        'manager': manager,
+        'team': display_team_name(manager),
+        'logo': _logo_path(manager)
+    }
+
+
+def _team_id_from_manager(manager: str) -> int | None:
+    for owner_id, team_id in teams.primowner_to_teamid.items():
+        if constants.TEAM_IDS[owner_id]['name']['display'] == manager:
+            return team_id
+    return None
+
+
+def _team_id_from_display_name(display_name: str) -> int | None:
+    for owner_id, team_id in teams.primowner_to_teamid.items():
+        manager = constants.TEAM_IDS[owner_id]['name']['display']
+        if display_team_name(manager) == display_name:
+            return team_id
+    return None
+
+
+def _matchup_score(matchup: dict, team_id: int):
+    if matchup.get('team1') == team_id:
+        return matchup.get('score1')
+    if matchup.get('team2') == team_id:
+        return matchup.get('score2')
+    return None
+
+
+def _display_score(score) -> str:
+    if score is None:
+        return ''
+    try:
+        if float(score) == 0:
+            return ''
+    except (TypeError, ValueError):
+        return ''
+    return _format_score(score)
 
 
 def display_team_values(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
@@ -341,20 +415,27 @@ params = Params(data)
 teams = Teams(data)
 week = params.regular_season_end+1 if params.current_week > params.regular_season_end+1 else params.current_week
 previous_week = max(params.current_week - 1, 0)
-power_data_week = previous_week
-power_display_week = week
+power_data_week = (
+    params.regular_season_end
+    if params.current_week > params.regular_season_end
+    else previous_week
+)
+power_display_week = 'Final' if params.current_week > params.regular_season_end else f'Week {week}'
 n_teams = len(teams.team_ids)
 
 # load db tables
 day = dt.now().strftime('%a')
 the_week = params.as_of_week if day == 'Tue' else params.current_week  # Wed is start of new week, and season_sim runs on Tue
+the_week = max(the_week, 1)
+completed_week = max(min(params.as_of_week, params.regular_season_end), 0)
 db_pr = Database(table='power_ranks', season=season, week=power_data_week)
 betting_table = (
     Database(table='betting_table', season=season, week=params.current_week)
-    .retrieve_data(how='season')  # show previous week on Tues
+    .retrieve_data(how='week')
     .sort_values('created')
-    .tail(n_teams)  # most recent db updates
 )
+if not betting_table.empty:
+    betting_table = betting_table.groupby('team', as_index=False).tail(1)
 season_sim_table = (
     Database(table='season_sim', season=season, week=week).
     retrieve_data(how='season')
@@ -363,8 +444,8 @@ season_sim_table = (
 )
 season_sim_wins_table = Database(table='season_sim_wins', season=season, week=the_week).retrieve_data(how='week')
 season_sim_ranks_table = Database(table='season_sim_ranks', season=season, week=the_week).retrieve_data(how='week')
-h2h_data = Database(table='h2h', season=season, week=week).retrieve_data(how='season')
-ss_data = Database(table='schedule_switcher', season=season, week=week).retrieve_data(how='season')
+h2h_data = Database(table='h2h', season=season, week=completed_week).retrieve_data(how='season')
+ss_data = Database(table='schedule_switcher', season=season, week=completed_week).retrieve_data(how='season')
 alltime_df = Database(table='alltime_standings').retrieve_data(how='all')
 records_df = Database(table='records').retrieve_data(how='all')
 actual_matchups_df = Database(table='matchups').retrieve_data(how='all')
@@ -389,14 +470,20 @@ if not rivalry_records_df.empty:
 
 
 # HOME PAGE
-standings = Standings(season=season, week=week)
+standings_week = (
+    params.regular_season_end
+    if params.current_week > params.regular_season_end
+    else week
+)
+standings = Standings(season=season, week=standings_week)
+if params.current_week > params.regular_season_end:
+    standings.params.as_of_week = params.regular_season_end
 standings_df = standings.format_standings()
 clinches = standings.clinching_scenarios()
 ps = PlayoffScenarios(data=data, params=params, teams=teams)
-show_clinch_scenarios = params.weeks_left <= 4
-bye_scens = ps.get_new_clinches(seed=2) if show_clinch_scenarios else {}
-playoff_scens = ps.get_new_clinches(seed=5) if show_clinch_scenarios else {}
-bootyman_scens = ps.get_new_bootyman_scenarios() if show_clinch_scenarios else {}
+bye_scens = ps.get_new_clinches(seed=3)
+playoff_scens = ps.get_new_clinches(seed=5)
+bootyman_scens = ps.get_new_bootyman_scenarios()
 magic_numbers = ps.get_magic_numbers()
 standings_df['bye_magic_number'] = standings_df['team'].map(lambda t: magic_numbers.get(t, {}).get('bye', None))
 standings_df['playoff_magic_number'] = standings_df['team'].map(lambda t: magic_numbers.get(t, {}).get('playoff', None))
@@ -408,9 +495,6 @@ standings_df['playoff_status'] = standings_df.apply(
     lambda x: x.wb5_disp if x.wb5_disp in ['c', 'x'] else x.playoff_magic_number,
     axis=1
 )
-
-if not show_clinch_scenarios:
-    clinches = {'clinches': [], 'eliminations': [], 'bootyman': []}
 
 def format_prob(p):
     if 0 < p <= 0.001:
@@ -459,6 +543,7 @@ for s in clinches['bootyman']:
         prob = f'0.0%'
     s.extend([prob])
 
+standings_seed_rows = standings_df[['seed', 'team']].to_dict(orient='records')
 standings_df = display_team_values(standings_df, ['team'])
 clinches['clinches'] = format_scenario_statements(
     clinches['clinches'],
@@ -472,27 +557,94 @@ clinches['bootyman'] = format_bootyman_scenario_statements(
     clinches['bootyman']
 )
 
+all_matchups = teams._fetch_matchups()
+previous_week_results = []
+previous_week_low_score = None
+if previous_week >= 1:
+    for matchup in all_matchups:
+        if matchup['week'] != previous_week or 'team2' not in matchup:
+            continue
+        scores = [matchup['score1'], matchup['score2']]
+        week_low = min(scores)
+        previous_week_low_score = (
+            week_low
+            if previous_week_low_score is None
+            else min(previous_week_low_score, week_low)
+        )
+        previous_week_results.append([
+            team_display_name(matchup['team1']),
+            _format_score(matchup['score1']),
+            _format_score(matchup['score2']),
+            team_display_name(matchup['team2'])
+        ])
+
+current_week_matchups = []
+for matchup in all_matchups:
+    if matchup['week'] != params.current_week or 'team2' not in matchup:
+        continue
+    current_week_matchups.append({
+        'matchup_id': simulations.get_matchup_id(
+            teams=teams,
+            week=params.current_week,
+            team_id=matchup['team1']
+        ),
+        'team1': team_display_name(matchup['team1']),
+        'team2': team_display_name(matchup['team2'])
+    })
+
+last_week_bootyman = None
+if (
+    params.current_week != 1
+    and params.current_week <= params.regular_season_end + 1
+    and previous_week >= 1
+):
+    previous_scores = []
+    for matchup in all_matchups:
+        if matchup['week'] != previous_week:
+            continue
+        previous_scores.append((matchup['team1'], matchup['score1']))
+        if 'team2' in matchup:
+            previous_scores.append((matchup['team2'], matchup['score2']))
+
+    if previous_scores:
+        bootyman_team_id, bootyman_score = min(
+            previous_scores,
+            key=lambda item: item[1]
+        )
+        bootyman_manager = manager_display_name(bootyman_team_id)
+        last_week_bootyman = {
+            'team': team_display_name(bootyman_team_id),
+            'manager': bootyman_manager,
+            'score': _format_score(bootyman_score),
+            'logo': _logo_path(bootyman_manager)
+        }
+
 
 pr_data = db_pr.retrieve_data(how='season')
-pr_data[['power_score_norm', 'score_norm_change']] = round(pr_data[['power_score_norm', 'score_norm_change']] * 100).astype('Int32')
-pr_table = pr_data[pr_data.week == power_data_week]
-pr_table = pr_table.sort_values('power_score_raw', ascending=False)
-pr_table['rank_change'] = -pr_table.rank_change
-pr_table[['total_points', 'weekly_points', 'consistency', 'manager', 'luck']] = pr_table[['season_idx', 'week_idx', 'consistency_idx', 'manager_idx', 'luck_idx']].rank(ascending=False, method='min').astype('Int32')
 pr_cols = ['team', 'total_points', 'weekly_points', 'consistency', 'manager', 'luck', 'power_rank', 'rank_change', 'power_score_norm', 'score_norm_change']
-pr_table = display_team_values(pr_table, ['team'])
-pr_data = display_team_values(pr_data, ['team'])
-rank_data = pr_data[['team', 'week', 'power_rank', 'power_score_norm']].sort_values(['week', 'power_score_norm'], ascending=[True, False]).to_dict(orient='records')
-rank_data = json.dumps(rank_data, indent=2)
-rank_data = {'rank_data': rank_data}
+rank_cols = ['team', 'week', 'power_rank', 'power_score_norm']
+if pr_data.empty:
+    pr_table = pd.DataFrame(columns=pr_cols)
+    rank_data = {'rank_data': '[]'}
+else:
+    pr_data[['power_score_norm', 'score_norm_change']] = round(pr_data[['power_score_norm', 'score_norm_change']] * 100).astype('Int32')
+    pr_table = pr_data[pr_data.week == power_data_week]
+    pr_table = pr_table.sort_values('power_score_raw', ascending=False)
+    pr_table['rank_change'] = -pr_table.rank_change
+    pr_table[['total_points', 'weekly_points', 'consistency', 'manager', 'luck']] = pr_table[['season_idx', 'week_idx', 'consistency_idx', 'manager_idx', 'luck_idx']].rank(ascending=False, method='min').astype('Int32')
+    pr_table = display_team_values(pr_table, ['team'])
+    pr_data = display_team_values(pr_data, ['team'])
+    rank_data = pr_data[rank_cols].sort_values(['week', 'power_score_norm'], ascending=[True, False]).to_dict(orient='records')
+    rank_data = json.dumps(rank_data, indent=2)
+    rank_data = {'rank_data': rank_data}
 
 
 # SIMULATIONS PAGE
 if betting_table.empty:
     timestamp_betting = 'No data'
-    betting_table = pd.DataFrame(columns=['team', 'avg_score', 'p_win', 'p_tophalf', 'p_highest', 'p_lowest'])
+    betting_table = pd.DataFrame(columns=['matchup_id', 'team', 'avg_score', 'p_win', 'p_tophalf', 'p_highest', 'p_lowest'])
 else:
-    timestamp_betting = pd.to_datetime(betting_table.created.values[0]).strftime("%A, %b %d %Y")
+    timestamp_betting = pd.to_datetime(betting_table.created.max()).strftime("%A, %b %d %Y")
     betting_table = betting_table.sort_values(['matchup_id', 'avg_score'])
     betting_table['avg_score'] = betting_table.avg_score.round(2).apply(lambda x: f'{x:.2f}')
     betting_table['p_win'] = betting_table.p_win.apply(lambda x: simulations.calculate_odds(init_prob=x))
@@ -500,6 +652,290 @@ else:
     betting_table['p_highest'] = betting_table.p_highest.apply(lambda x: simulations.calculate_odds(init_prob=x))
     betting_table['p_lowest'] = betting_table.p_lowest.apply(lambda x: simulations.calculate_odds(init_prob=x))
     betting_table = display_team_values(betting_table, ['team'])
+
+current_week_matchup_rows = []
+for matchup in current_week_matchups:
+    matchup_odds = betting_table[
+        betting_table.matchup_id == matchup['matchup_id']
+    ] if 'matchup_id' in betting_table.columns else pd.DataFrame()
+    odds_by_team = dict(zip(matchup_odds.team, matchup_odds.p_win))
+    current_week_matchup_rows.append([
+        matchup['team1'],
+        odds_by_team.get(matchup['team1'], '-'),
+        odds_by_team.get(matchup['team2'], '-'),
+        matchup['team2']
+    ])
+
+is_playoff_week = params.current_week > params.regular_season_end
+postseason_home = {
+    'show': is_playoff_week,
+    'week': params.current_week,
+    'bootyman_bowl_logo': 'logos/bootyman_bowl.png',
+    'nut_cup_logo': 'logos/quest_for_nut_cup.png',
+    'bootyman_matchup': None,
+    'this_year_bootyman': None,
+    'championship_matchup': None,
+    'bracket_games': [],
+    'bracket_rounds': []
+}
+
+seed_to_manager = {
+    int(row['seed']): row['team']
+    for row in standings_seed_rows
+    if pd.notna(row.get('seed'))
+}
+
+bootyman_managers = [
+    seed_to_manager[seed]
+    for seed in [9, 10]
+    if seed in seed_to_manager
+]
+bootyman_team_ids = [
+    teams.primowner_to_teamid[owner_id]
+    for owner_id, team_id in teams.primowner_to_teamid.items()
+    if constants.TEAM_IDS[owner_id]['name']['display'] in bootyman_managers
+]
+bootyman_cards = [_team_card_from_manager(manager) for manager in bootyman_managers]
+if len(bootyman_cards) == 2:
+    postseason_home['bootyman_matchup'] = {
+        'teams': bootyman_cards
+    }
+
+week_15_bootyman_scores = []
+for team_id in bootyman_team_ids:
+    for matchup in all_matchups:
+        if matchup['week'] != params.regular_season_end + 1:
+            continue
+        score = _matchup_score(matchup, team_id)
+        if score is not None:
+            week_15_bootyman_scores.append((team_id, score))
+            break
+
+if params.current_week >= params.regular_season_end + 2 and week_15_bootyman_scores:
+    bootyman_team_id, _ = min(week_15_bootyman_scores, key=lambda item: item[1])
+    postseason_home['this_year_bootyman'] = _team_card_from_team_id(bootyman_team_id)
+
+def _find_matchup_between(week: int, team1_id: int | None, team2_id: int | None) -> dict | None:
+    if team1_id is None or team2_id is None:
+        return None
+    for matchup in all_matchups:
+        if matchup['week'] != week or 'team2' not in matchup:
+            continue
+        matchup_teams = {matchup['team1'], matchup['team2']}
+        if {team1_id, team2_id} == matchup_teams:
+            return matchup
+    return None
+
+
+def _matchup_winner_id(matchup: dict | None) -> int | None:
+    if not matchup:
+        return None
+    score1 = matchup.get('score1')
+    score2 = matchup.get('score2')
+    if score1 is None or score2 is None:
+        return None
+    if score1 == score2:
+        return None
+    return matchup['team1'] if score1 > score2 else matchup['team2']
+
+
+def _bracket_game(
+    *,
+    week: int,
+    team1_id: int | None,
+    team2_id: int | None,
+    team1_label: str = None,
+    team2_label: str = None
+) -> dict:
+    matchup = _find_matchup_between(week, team1_id, team2_id)
+    team1_card = _team_card_from_team_id(team1_id) if team1_id else {}
+    team2_card = _team_card_from_team_id(team2_id) if team2_id else {}
+    team1 = team1_card.get('team', team1_label or 'TBD')
+    team2 = team2_card.get('team', team2_label or 'TBD')
+
+    odds_by_team = {}
+    if matchup and week == params.current_week and 'matchup_id' in betting_table.columns:
+        matchup_id = simulations.get_matchup_id(
+            teams=teams,
+            week=week,
+            team_id=matchup['team1']
+        )
+        matchup_odds = betting_table[betting_table.matchup_id == matchup_id]
+        odds_by_team = dict(zip(matchup_odds.team, matchup_odds.p_win))
+
+    return {
+        'week': week,
+        'label': f"Week {week}",
+        'team1': team1,
+        'team2': team2,
+        'seed1': team_id_to_seed.get(team1_id, ''),
+        'seed2': team_id_to_seed.get(team2_id, ''),
+        'logo1': team1_card.get('logo', ''),
+        'logo2': team2_card.get('logo', ''),
+        'score1': _display_score(_matchup_score(matchup, team1_id)) if week < params.current_week else '',
+        'score2': _display_score(_matchup_score(matchup, team2_id)) if week < params.current_week else '',
+        'winner': _matchup_winner_id(matchup) if week < params.current_week else None,
+        'team1_id': team1_id,
+        'team2_id': team2_id,
+        'odds1': odds_by_team.get(team1, ''),
+        'odds2': odds_by_team.get(team2, '')
+    }
+
+
+seed_team_ids = {
+    seed: _team_id_from_manager(manager)
+    for seed, manager in seed_to_manager.items()
+}
+team_id_to_seed = {
+    team_id: seed
+    for seed, team_id in seed_team_ids.items()
+    if team_id is not None
+}
+play_in_week = params.regular_season_end + 1
+semifinal_week = params.regular_season_end + 2
+championship_week = params.regular_season_end + 3
+
+play_in_matchup = _find_matchup_between(
+    play_in_week,
+    seed_team_ids.get(4),
+    seed_team_ids.get(5)
+)
+play_in_winner_id = (
+    _matchup_winner_id(play_in_matchup)
+    if params.current_week > play_in_week
+    else None
+)
+
+postseason_home['bracket_games'].append(_bracket_game(
+    week=play_in_week,
+    team1_id=seed_team_ids.get(4),
+    team2_id=seed_team_ids.get(5)
+))
+postseason_home['bracket_games'].append(_bracket_game(
+    week=semifinal_week,
+    team1_id=seed_team_ids.get(1),
+    team2_id=play_in_winner_id,
+    team2_label='Play-In Winner'
+))
+postseason_home['bracket_games'].append(_bracket_game(
+    week=semifinal_week,
+    team1_id=seed_team_ids.get(2),
+    team2_id=seed_team_ids.get(3)
+))
+
+semi_winners = []
+if params.current_week > semifinal_week:
+    for game in postseason_home['bracket_games']:
+        if game['week'] != semifinal_week:
+            continue
+        team1_id = _team_id_from_display_name(game['team1'])
+        team2_id = _team_id_from_display_name(game['team2'])
+        semi_winner_id = _matchup_winner_id(
+            _find_matchup_between(semifinal_week, team1_id, team2_id)
+        )
+        if semi_winner_id:
+            semi_winners.append(semi_winner_id)
+
+championship_matchup = None
+if len(semi_winners) == 2:
+    championship_matchup = _bracket_game(
+        week=championship_week,
+        team1_id=semi_winners[0],
+        team2_id=semi_winners[1]
+    )
+elif params.current_week >= championship_week:
+    winner_bracket_matchup_ids = {
+        matchup.get('id')
+        for matchup in teams.matchups.get('schedule', [])
+        if matchup.get('playoffTierType') == 'WINNERS_BRACKET'
+    }
+    actual_final = next(
+        (
+            matchup for matchup in all_matchups
+            if matchup['week'] == championship_week
+            and 'team2' in matchup
+            and (
+                not winner_bracket_matchup_ids
+                or matchup.get('matchup_id') in winner_bracket_matchup_ids
+            )
+        ),
+        None
+    )
+    if actual_final:
+        championship_matchup = _bracket_game(
+            week=championship_week,
+            team1_id=actual_final['team1'],
+            team2_id=actual_final['team2']
+        )
+
+postseason_home['bracket_games'].append(
+    championship_matchup
+    if championship_matchup
+    else _bracket_game(
+        week=championship_week,
+        team1_id=None,
+        team2_id=None,
+        team1_label='Semifinal Winner',
+        team2_label='Semifinal Winner'
+    )
+)
+
+round_labels = {
+    play_in_week: 'Play-In',
+    semifinal_week: 'Semifinals',
+    championship_week: 'Championship'
+}
+postseason_home['bracket_rounds'] = [
+    {
+        'week': bracket_week,
+        'label': round_labels.get(bracket_week, f'Week {bracket_week}'),
+        'games': [
+            game
+            for game in postseason_home['bracket_games']
+            if game['week'] == bracket_week
+        ]
+    }
+    for bracket_week in range(
+        play_in_week,
+        championship_week + 1
+    )
+]
+postseason_home['bracket_byes'] = [
+    {
+        'seed': seed,
+        **_team_card_from_team_id(team_id)
+    }
+    for seed, team_id in seed_team_ids.items()
+    if seed in [1, 2, 3] and team_id is not None
+]
+postseason_home['bracket_rounds'] = [
+    bracket_round
+    for bracket_round in postseason_home['bracket_rounds']
+    if bracket_round['week'] <= params.current_week
+    and bracket_round['games']
+]
+
+if params.current_week == championship_week:
+    current_final = [
+        game
+        for game in postseason_home['bracket_games']
+        if game['week'] == params.current_week
+        and game['team1'] != 'Semifinal Winner'
+        and game['team2'] != 'Semifinal Winner'
+    ]
+    if current_final:
+        postseason_home['championship_matchup'] = {
+            'teams': [
+                {
+                    'team': current_final[0]['team1'],
+                    'logo': current_final[0]['logo1']
+                },
+                {
+                    'team': current_final[0]['team2'],
+                    'logo': current_final[0]['logo2']
+                }
+            ]
+        }
 
 keep_cols = ['team', 'projected_wins', 'projected_losses', 'total_points', 'playoffs', 'finals', 'champion']
 if season_sim_table.empty:
@@ -551,23 +987,37 @@ else:
 
 
 # SCENARIOS PAGE
-h2h_data = h2h_data[h2h_data.week <= params.regular_season_end]
-total_wins = scenarios.get_total_wins(h2h_data=h2h_data, teams=teams, week=week)
+h2h_data = h2h_data[h2h_data.week <= completed_week] if 'week' in h2h_data.columns else h2h_data
+total_wins = scenarios.get_total_wins(h2h_data=h2h_data, teams=teams, week=completed_week + 1)
 wins_by_week = scenarios.get_wins_by_week(h2h_data=h2h_data, total_wins=total_wins, teams=teams)
-wins_vs_opp = scenarios.get_wins_vs_opp(h2h_data=h2h_data, total_wins=total_wins, wins_by_week=wins_by_week, week=week)
+wins_vs_opp = scenarios.get_wins_vs_opp(h2h_data=h2h_data, total_wins=total_wins, wins_by_week=wins_by_week, week=completed_week + 1)
 wins_vs_opp = display_team_columns(display_team_values(wins_vs_opp, ['team']))
 wins_by_week = display_team_values(wins_by_week, ['team'])
 
-ss_disp_temp = scenarios.get_schedule_switcher_display(ss_data=ss_data, total_wins=total_wins, week=week)
-ss_luck = pd.DataFrame.from_dict(scenarios.calculate_schedule_luck(ss_data), orient='index').reset_index().rename(columns={'index':'team', 0:'Luck'})
+ss_disp_temp = scenarios.get_schedule_switcher_display(ss_data=ss_data, total_wins=total_wins, week=completed_week + 1)
+ss_luck_dict = scenarios.calculate_schedule_luck(ss_data)
+if ss_luck_dict:
+    ss_luck = pd.DataFrame.from_dict(ss_luck_dict, orient='index').reset_index().rename(columns={'index':'team', 0:'Luck'})
+else:
+    ss_luck = pd.DataFrame({'team': total_wins.team, 'Luck': '+0.0'})
 ss_disp = pd.merge(ss_disp_temp, ss_luck, on='team')
 ss_disp = display_team_columns(display_team_values(ss_disp, ['team']))
 
 
 # TEAM EFFICIENCY PAGE
+efficiency_display_week = (
+    params.regular_season_end
+    if params.current_week > params.regular_season_end
+    else previous_week
+)
+efficiency_title = (
+    'Final Lineup Efficiency'
+    if params.current_week > params.regular_season_end
+    else 'Lineup Efficiency'
+)
 eff_plot = plot_efficiency(
     season=season,
-    week=previous_week,
+    week=efficiency_display_week,
     x='actual_lineup_score',
     y='optimal_lineup_score',
     xlab='Difference From Optimal Points per Week',

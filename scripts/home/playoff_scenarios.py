@@ -43,6 +43,9 @@ class PlayoffScenarios:
             week=self.params.as_of_week
         ).retrieve_data(how='season')
         df = df[df.team.isin(self.team_names)]
+        if df.empty:
+            return []
+
         df['wins'] = df.matchup_result
 
         standings = (
@@ -62,10 +65,11 @@ class PlayoffScenarios:
                 season=self.season,
                 week=self.params.current_week
             )
-            .retrieve_data(how='season')
+            .retrieve_data(how='week')
             .sort_values('created')
-            .tail(len(self.team_names))
         )
+        if not df.empty:
+            df = df.groupby('team', as_index=False).tail(1)
         df = df[df.team.isin(self.team_names)]
         return df[['team', 'matchup_id', 'p_win']].to_dict(orient='records')
 
@@ -130,6 +134,9 @@ class PlayoffScenarios:
 
     def get_teams(self, standings: list[dict], seed: int) -> tuple[list[str], list[str]]:
         standings = self._sort_standings(standings)
+        if not standings:
+            return [], []
+
         games_played = standings[0]['wins'] + standings[0]['losses']
         weeks_left = self.params.regular_season_end - games_played
 
@@ -152,6 +159,9 @@ class PlayoffScenarios:
         )
 
     def get_new_clinches(self, seed: int) -> dict:
+        if not self.standings or not self.scenarios:
+            return {}
+
         clinched, eliminated = self.get_teams(
             standings=self.standings,
             seed=seed
@@ -207,6 +217,9 @@ class PlayoffScenarios:
 
     def get_bootyman_status(self, standings: list[dict]) -> tuple[list[str], list[str]]:
         standings = self._sort_bootyman_standings(standings)
+        if len(standings) < 3:
+            return [], []
+
         games_played = standings[0]['wins'] + standings[0]['losses']
         weeks_left = self.params.regular_season_end - games_played
 
@@ -229,6 +242,9 @@ class PlayoffScenarios:
         )
 
     def get_new_bootyman_scenarios(self) -> dict:
+        if not self.standings or not self.scenarios:
+            return {}
+
         clinched, escaped = self.get_bootyman_status(
             standings=self.standings
         )
@@ -310,8 +326,8 @@ class PlayoffScenarios:
         }
 
         for team in self.team_names:
-            for seed in [2, 5]:
-                cat = 'bye' if seed == 2 else 'playoff'
+            for seed in [3, 5]:
+                cat = 'bye' if seed == 3 else 'playoff'
                 magic = self.team_magic_number(
                     team=team,
                     playoff_spots=seed

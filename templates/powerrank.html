@@ -15,35 +15,6 @@ table.center {
 caption {font-size: small;}
 
 </style>
-<h1>{{ week }} Standings</h1>
-<div class="tscroll" style="overflow-x:auto;">
-    <table class="table table-hover center content-table standings" style="margin-left: auto; margin-right: auto; width:60%">
-        <caption>
-            GB-Games back of bye or playoff seed <br>
-            Seeds 1-2 are division winners; seeds 3-5 are wild cards <br>
-            c-Clinched bye or playoff spot <br>
-            x-Eliminated from bye or playoff spot <br>
-            Plus indicates the team is ahead of the cutoff
-        </caption>
-        <thead>
-            <tr>
-                {% for header in headings_st %}
-                    <th>{{ header }}</th>
-                {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-        {% for row in data_st %}
-            <tr class='{% if row[1] in ["King's Landing", "Gustavo", "The Warriors", "Gruden's Grinders", "Mighty Acorns"] %}division-east{% else %}division-west{% endif %}'>
-                {% for cell in row %}
-                    <td>{{ cell }}</td>
-                {% endfor %}
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-</div>
-<br>
 {% if data_cl %}
 <h1>Clinching Scenarios</h1>
 <div class="tscroll" style="overflow-x:auto;">
@@ -116,6 +87,7 @@ caption {font-size: small;}
 </div>
 <br>
 {% endif %}
+{% if show_power_rankings %}
 <h1>{{ power_week }} Power Rankings</h1>
 <div class="tscroll" style="overflow-x:auto;">
     <table class="table table-hover center content-table pr" style="table-layout:auto; width:60%">
@@ -156,13 +128,17 @@ caption {font-size: small;}
   const width = +svg.attr("width");
   const height = +svg.attr("height")/2.5;
 
-  const render = (data, yvar, t1) =>{
+    const render = (data, yvar, t1) =>{
     const xValue = d => +d.week;
     const yValue = d => +d[yvar];
+    const weekTicks = Array.from(new Set(data.map(xValue))).sort((a, b) => a - b);
     const margin = {top:50, right:70, bottom:60, left:20};
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
     const circleRadius = 4;
+    const isWeekOneData = d3.max(data, xValue) === 1;
+    const pointRadius = isWeekOneData ? 6 : 4;
+    const pointOpacity = isWeekOneData ? 0.85 : 0.55;
 
     const colorValue = d => d.team;
 
@@ -177,7 +153,7 @@ caption {font-size: small;}
     // define axis scales
     const xScale = d3.scaleLinear()
   	  .domain([1, d3.max(data, xValue)])
-  	  .range([0, innerWidth-250])
+  	  .range([0, innerWidth-300])
       .nice();
 
     const yScale = d3.scaleLinear()
@@ -191,7 +167,8 @@ caption {font-size: small;}
   	  .attr('transform', `translate(75, ${t1})`);
 
     const xAxis = d3.axisBottom(xScale)
-      .ticks(d3.max(data, xValue))
+      .tickValues(weekTicks)
+      .tickFormat(d3.format("d"))
   	  .tickSize(-innerHeight-10);
 
     const xAxisG = g.append("g").call(xAxis)
@@ -203,13 +180,13 @@ caption {font-size: small;}
     xAxisG.append("text")
   	  .attr("class", "axis-label")
   	  .attr("y", 40)
-  	  .attr("x", (innerWidth-250)/2)
+  	  .attr("x", (innerWidth-300)/2)
   	  .attr("fill", "black")
   	  .text("Week");
 
     const yAxis = d3.axisLeft(yScale)
       .ticks(d3.max(data, yValue))
-  	  .tickSize(-innerWidth+240);
+  	  .tickSize(-innerWidth+290);
 
     const yAxisG = g.append("g").call(yAxis)
   	  .attr("transform", "translate(-10, 0)");
@@ -261,6 +238,15 @@ caption {font-size: small;}
           .attr("stroke-width", "3")
           .attr("opacity", "0.5")});
 
+    g.selectAll(".power-rank-point").data(data)
+      .enter().append("circle")
+      .attr("class", "power-rank-point")
+      .attr("cx", d => xScale(xValue(d)))
+      .attr("cy", d => yScale(yValue(d)))
+      .attr("r", pointRadius)
+      .attr("fill", d => colorScale(colorValue(d)))
+      .attr("opacity", pointOpacity);
+
     // draw legend
     const colorLegend = (selection, props) => {
       const {
@@ -298,7 +284,7 @@ caption {font-size: small;}
     }
 
     svg.append("g")
-      .attr("transform", "translate(710,60)")
+      .attr("transform", "translate(660,60)")
       .call(colorLegend, {
         colorScale,
         circleRadius: 4,
@@ -308,10 +294,12 @@ caption {font-size: small;}
     });
 
     g.append("text")
-  	  .attr("class", "title")
-      .attr("x", (innerWidth-250)/4)
+      .attr("class", "title")
+      .attr("x", (innerWidth-300)/4)
   	  .attr("y", -10)
+  	  .style("font-family", "Barlow Condensed, sans-serif")
   	  .style("font-size", "32px")
+  	  .style("font-weight", "800")
   	  .text("Weekly Power Ranks");
 };
 
@@ -328,9 +316,13 @@ render(data, 'power_rank', 50);
   const render2 = (data, yvar) =>{
     const xValue = d => +d.week;
     const yValue = d => +d[yvar];
+    const weekTicks = Array.from(new Set(data.map(xValue))).sort((a, b) => a - b);
     const margin = {top:50, right:70, bottom:60, left:20};
     const innerWidth = width2 - margin.left - margin.right;
     const innerHeight = height2 - margin.top - margin.bottom;
+    const isWeekOneData = d3.max(data, xValue) === 1;
+    const pointRadius = isWeekOneData ? 6 : 4;
+    const pointOpacity = isWeekOneData ? 0.85 : 0.55;
 
     const colorValue = d => d.team;
 
@@ -345,7 +337,7 @@ render(data, 'power_rank', 50);
     // define scales
     const xScale = d3.scaleLinear()
   	  .domain([1, d3.max(data, xValue)])
-  	  .range([0, innerWidth-250])
+  	  .range([0, innerWidth-300])
       .nice();
 
     const yScale = d3.scaleLinear()
@@ -359,7 +351,8 @@ render(data, 'power_rank', 50);
   	  .attr('transform', `translate(75, ${450})`);
 
     const xAxis = d3.axisBottom(xScale)
-      .ticks(d3.max(data, xValue))
+      .tickValues(weekTicks)
+      .tickFormat(d3.format("d"))
   	  .tickSize(-innerHeight-10);
 
     const xAxisG = g.append("g").call(xAxis)
@@ -371,12 +364,12 @@ render(data, 'power_rank', 50);
     xAxisG.append("text")
   	  .attr("class", "axis-label")
   	  .attr("y", 40)
-  	  .attr("x", (innerWidth-250)/2)
+  	  .attr("x", (innerWidth-300)/2)
   	  .attr("fill", "black")
   	  .text("Week");
 
     const yAxis = d3.axisLeft(yScale)
-  	  .tickSize(-innerWidth+240);
+  	  .tickSize(-innerWidth+290);
 
     const yAxisG = g.append("g").call(yAxis)
   	  .attr("transform", "translate(-10, 0)");
@@ -425,6 +418,15 @@ render(data, 'power_rank', 50);
           .attr("stroke-width", "3")
           .attr("opacity", "0.5")});
 
+    g.selectAll(".power-score-point").data(data)
+      .enter().append("circle")
+      .attr("class", "power-score-point")
+      .attr("cx", d => xScale(xValue(d)))
+      .attr("cy", d => yScale(yValue(d)))
+      .attr("r", pointRadius)
+      .attr("fill", d => colorScale(colorValue(d)))
+      .attr("opacity", pointOpacity);
+
     // draw legend
     const colorLegend = (selection, props) => {
       const {
@@ -462,7 +464,7 @@ render(data, 'power_rank', 50);
     }
 
     svg.append("g")
-      .attr("transform", "translate(710,460)")
+      .attr("transform", "translate(660,460)")
       .call(colorLegend, {
         colorScale,
         circleRadius: 4,
@@ -472,14 +474,21 @@ render(data, 'power_rank', 50);
     });
 
     g.append("text")
-  	  .attr("class", "title")
-      .attr("x", (innerWidth-250)/4)
+      .attr("class", "title")
+      .attr("x", (innerWidth-300)/4)
   	  .attr("y", -10)
+  	  .style("font-family", "Barlow Condensed, sans-serif")
   	  .style("font-size", "32px")
+  	  .style("font-weight", "800")
   	  .text("Weekly Power Scores");
 };
 
 render2(data, 'power_score_norm');
 </script>
 </div>
+{% endif %}
+{% if not show_power_rankings %}
+<h1>{{ power_week }} Power Rankings</h1>
+<p class="empty-power-rank-note">Power rank data will be available after Week 1.</p>
+{% endif %}
 {% endblock %}

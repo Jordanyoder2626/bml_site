@@ -48,6 +48,9 @@ def power_rank(params: Params,
     season_sim = Database(table='season_sim', season=season, week=week+1).retrieve_data(how='week')
     matchups = Database(table='matchups', season=season, week=week).retrieve_data(how='season')
     matchups = matchups[matchups.week <= params.regular_season_end]
+    if matchups.empty:
+        return {}
+
     matchups['median'] = matchups.groupby('week')['score'].transform('median')
 
     if week == 1:
@@ -72,7 +75,15 @@ def power_rank(params: Params,
         sim_ppg_med = (season_sim.total_points.median() / params.regular_season_end) * wks_rem_factor
 
     ppg_med = matchups.groupby('team').score.mean().median() * wks_played_factor
-    eff_med = eff.groupby('team').actual_lineup_score.mean().median() / eff.groupby('team').optimal_lineup_score.mean().median()
+    if (
+        eff.empty
+        or 'actual_lineup_score' not in eff.columns
+        or 'optimal_lineup_score' not in eff.columns
+        or eff.groupby('team').optimal_lineup_score.mean().median() == 0
+    ):
+        eff_med = 1
+    else:
+        eff_med = eff.groupby('team').actual_lineup_score.mean().median() / eff.groupby('team').optimal_lineup_score.mean().median()
 
     wts = exp_decay(week=week, reverse=False)
 
@@ -112,11 +123,11 @@ def power_rank(params: Params,
         pr_dict[t].update({'week_idx': sum(scores)})
 
         tm_m_wp = matchups[matchups.team==t].matchup_result.sum() / week
-        ss_wp = ss[(ss.team==t) & (ss.schedule_of!=t)].result.sum() / ((len(set(matchups.team))-1) * week)
+        ss_wp = 0 if ss.empty or 'result' not in ss.columns else ss[(ss.team==t) & (ss.schedule_of!=t)].result.sum() / ((len(set(matchups.team))-1) * week)
         tm_m_luck = scale_luck(tm_m_wp - ss_wp)
 
         tm_th_wp = matchups[matchups.team==t].tophalf_result.sum() / week
-        th_wp = h2h[h2h.team==t].result.sum() / ((len(set(matchups.team))-1) * week)
+        th_wp = 0 if h2h.empty or 'result' not in h2h.columns else h2h[h2h.team==t].result.sum() / ((len(set(matchups.team))-1) * week)
         tm_th_luck = scale_luck(tm_th_wp - th_wp)
 
         l_scores[t] = tm_m_luck + tm_th_luck
@@ -127,9 +138,12 @@ def power_rank(params: Params,
         c_idx = 0 if len(pr_tm) < 2 else consistency_index(sd=sd, ppg=tm_ppg_cons, ppg_median=ppg_med)
         c_scores[t] = c_idx * consistency_factor
 
-        tm_eff = eff[eff.team==t]
-        den = tm_eff.optimal_lineup_score.sum()
-        lineup_eff = tm_eff.actual_lineup_score.sum() / den if den != 0 else 0
+        if eff.empty or 'team' not in eff.columns or 'optimal_lineup_score' not in eff.columns or 'actual_lineup_score' not in eff.columns:
+            lineup_eff = 1
+        else:
+            tm_eff = eff[eff.team==t]
+            den = tm_eff.optimal_lineup_score.sum()
+            lineup_eff = tm_eff.actual_lineup_score.sum() / den if den != 0 else 1
         m_idx = scoring_index(score=lineup_eff, median=eff_med, weight=1)
         pr_dict[t].update({'manager_idx': m_idx})
 
