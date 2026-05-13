@@ -326,8 +326,8 @@ class PlayoffScenarios:
         }
 
         for team in self.team_names:
-            for seed in [2, 5]:
-                cat = 'bye' if seed == 2 else 'playoff'
+            for seed in [3, 5]:
+                cat = 'bye' if seed == 3 else 'playoff'
                 magic = self.team_magic_number(
                     team=team,
                     playoff_spots=seed

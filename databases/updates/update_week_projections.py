@@ -52,7 +52,7 @@ def _upsert_projections(cursor, week):
     return len(data)
 
 
-def _update_actuals(cursor, data_loader, week):
+def _update_actuals(cursor, data_loader, week, season=SEASON):
     try:
         players = data_loader.load_week(week=week)['players']
     except Exception as e:
@@ -72,7 +72,7 @@ def _update_actuals(cursor, data_loader, week):
 
         for stat in player['player'].get('stats', []):
             is_actual = (
-                stat.get('seasonId') == SEASON
+                stat.get('seasonId') == season
                 and stat.get('scoringPeriodId') == week
                 and stat.get('statSourceId') == 0
             )
@@ -81,7 +81,7 @@ def _update_actuals(cursor, data_loader, week):
                 actual = stat.get('appliedTotal', 0)
 
         try:
-            cursor.execute(query, (actual, player['id'], SEASON, week))
+            cursor.execute(query, (actual, player['id'], season, week))
         except mysql.connector.errors.ProgrammingError as e:
             if "Unknown column 'actual'" in str(e):
                 print("  Skipped actuals: player_projections.actual does not exist")
@@ -89,18 +89,28 @@ def _update_actuals(cursor, data_loader, week):
             raise
 
 
-def main():
-    data_loader = DataLoader(year=SEASON)
+def update_week(season: int, week: int, update_actuals: bool = True) -> int:
+    data_loader = DataLoader(year=season)
 
     with Database() as conn:
         cursor = conn.cursor()
+        row_count = _upsert_projections(cursor=cursor, week=week)
+        if update_actuals:
+            _update_actuals(
+                cursor=cursor,
+                data_loader=data_loader,
+                week=week,
+                season=season
+            )
+        conn.commit()
+        return row_count
 
-        for week in range(START_WEEK, END_WEEK + 1):
-            print(f"Processing {SEASON} week {week}")
-            row_count = _upsert_projections(cursor=cursor, week=week)
-            _update_actuals(cursor=cursor, data_loader=data_loader, week=week)
-            conn.commit()
-            print(f"  Upserted {row_count} projections")
+
+def main():
+    for week in range(START_WEEK, END_WEEK + 1):
+        print(f"Processing {SEASON} week {week}")
+        row_count = update_week(season=SEASON, week=week)
+        print(f"  Upserted {row_count} projections")
 
 
 if __name__ == '__main__':

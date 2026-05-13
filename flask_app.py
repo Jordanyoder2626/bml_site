@@ -16,7 +16,7 @@ fa = FontAwesome(app)
 
 @app.route("/")
 def home():
-    week_str = f'Week {week}'
+    week_str = f'Week {params.current_week}'
     headings_st = tuple(['Rk', 'Team', 'Overall', 'Division', 'Win%', 'Points', 'Bye GB', 'Playoff GB'])
     data_st = ut.flask_get_data(standings_df[STANDINGS_COLUMNS_FLASK])
 
@@ -32,25 +32,28 @@ def home():
         previous_week=previous_week,
         current_week=params.current_week,
         previous_week_low_score=previous_week_low_score,
-        last_week_bootyman=last_week_bootyman
+        last_week_bootyman=last_week_bootyman,
+        is_playoff_week=is_playoff_week,
+        postseason_home=postseason_home
     )
 
 @app.route("/power-rankings/")
 def power_rankings():
     week_str = f'Week {week}'
-    power_week_str = f'Week {power_display_week}'
+    power_week_str = power_display_week
 
     cl_cols = ['Scenario', 'Probability']
-    headings_cl = tuple(cl_cols) if clinches['clinches'] else tuple()
-    data_cl = ut.flask_get_data(clinches['clinches']) if clinches['clinches'] else tuple()
+    show_scenarios = params.current_week <= params.regular_season_end
+    headings_cl = tuple(cl_cols) if show_scenarios and clinches['clinches'] else tuple()
+    data_cl = ut.flask_get_data(clinches['clinches']) if show_scenarios and clinches['clinches'] else tuple()
 
     el_cols = ['Scenario', 'Probability']
-    headings_el = tuple(el_cols) if clinches['eliminations'] else tuple()
-    data_el = ut.flask_get_data(clinches['eliminations']) if clinches['eliminations'] else tuple()
+    headings_el = tuple(el_cols) if show_scenarios and clinches['eliminations'] else tuple()
+    data_el = ut.flask_get_data(clinches['eliminations']) if show_scenarios and clinches['eliminations'] else tuple()
 
     bb_cols = ['Scenario', 'Probability']
-    headings_bb = tuple(bb_cols) if clinches['bootyman'] else tuple()
-    data_bb = ut.flask_get_data(clinches['bootyman']) if clinches['bootyman'] else tuple()
+    headings_bb = tuple(bb_cols) if show_scenarios and clinches['bootyman'] else tuple()
+    data_bb = ut.flask_get_data(clinches['bootyman']) if show_scenarios and clinches['bootyman'] else tuple()
 
     show_power_rankings = not pr_table.empty
     headings_pr = tuple(['Team', 'Season', 'Recency', 'Consistency', 'Manager', 'Luck', 'Rank', '1 Week \u0394', 'Score', '1 Week \u0394'])
@@ -73,8 +76,12 @@ def logos(filename):
 
 @app.route("/simulations/")
 def sims():
-    headings_bets = tuple(['Team', 'Points', 'Matchup', 'TopHalf', 'Highest', 'Lowest'])
-    data_bets = ut.flask_get_data(betting_table[['team', 'avg_score', 'p_win', 'p_tophalf', 'p_highest', 'p_lowest']])
+    if params.current_week > params.regular_season_end:
+        headings_bets = tuple(['Team', 'Proj Points', 'Matchup'])
+        data_bets = ut.flask_get_data(betting_table[['team', 'avg_score', 'p_win']])
+    else:
+        headings_bets = tuple(['Team', 'Proj Points', 'Matchup', 'TopHalf', 'Highest', 'Lowest'])
+        data_bets = ut.flask_get_data(betting_table[['team', 'avg_score', 'p_win', 'p_tophalf', 'p_highest', 'p_lowest']])
 
     headings_season_sim = tuple(['Team', 'Projected Wins', 'Projected Losses', 'Points', 'Playoff%', 'Finals%', 'Champion%'])
     data_season_sim = ut.flask_get_data(season_sim_table)
@@ -106,7 +113,8 @@ def sims():
         headings_w=headings_w, data_w=data_w,
         headings_r=headings_r, data_r=data_r,
         # headings_p=headings_p, data_p=data_p,
-        tstamp_bets=timestamp_betting, tstamp_s=timestamp_season_sim
+        tstamp_bets=timestamp_betting, tstamp_s=timestamp_season_sim,
+        show_season_sim=params.current_week <= params.regular_season_end
     )
 
 @app.route("/scenarios/")
@@ -148,7 +156,11 @@ def scenarios():
 
 @app.route("/efficiency/")
 def eff():
-    return render_template("efficiencies.html", eff_plot=eff_plot)
+    return render_template(
+        "efficiencies.html",
+        eff_plot=eff_plot,
+        efficiency_title=efficiency_title
+    )
 
 @app.route("/champions/")
 def champs():

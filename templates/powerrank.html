@@ -487,4 +487,8 @@ render2(data, 'power_score_norm');
 </script>
 </div>
 {% endif %}
+{% if not show_power_rankings %}
+<h1>{{ power_week }} Power Rankings</h1>
+<p class="empty-power-rank-note">Power rank data will be available after Week 1.</p>
+{% endif %}
 {% endblock %}

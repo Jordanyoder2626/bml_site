@@ -5,6 +5,162 @@
 <br>
 <h1>{{ week }} Breakdown</h1>
 
+{% if is_playoff_week and current_week in [15, 16] %}
+<section class="playoff-bracket-section">
+    <img class="postseason-title-logo" src="/{{ postseason_home.nut_cup_logo }}" alt="Quest for the Nut Cup">
+    <div class="playoff-bracket playoff-bracket-rounds-{{ postseason_home.bracket_rounds|length }}">
+        {% for round in postseason_home.bracket_rounds %}
+        <div class="bracket-round {% if round.week == current_week %}current-bracket-round{% endif %}">
+            <div class="bracket-round-title">{{ round.label }}</div>
+            <div class="bracket-round-games">
+                {% for game in round.games %}
+                <div class="bracket-game {% if game.week == current_week %}current-bracket-game{% endif %}">
+                    <div class="bracket-team-row">
+                        <span class="bracket-team">
+                            {% if game.seed1 %}<span class="bracket-seed">{{ game.seed1 }}</span>{% endif %}
+                            {{ game.team1 }}
+                        </span>
+                        <span class="bracket-meta">
+                            {% if game.score1 %}
+                                <span class="{% if game.winner == game.team1_id %}bracket-winning-score{% endif %}">{{ game.score1 }}</span>
+                            {% endif %}
+                            {% if game.odds1 %}<span class="bracket-odds">{{ game.odds1 }}</span>{% endif %}
+                        </span>
+                    </div>
+                    <div class="bracket-team-row">
+                        <span class="bracket-team">
+                            {% if game.seed2 %}<span class="bracket-seed">{{ game.seed2 }}</span>{% endif %}
+                            {{ game.team2 }}
+                        </span>
+                        <span class="bracket-meta">
+                            {% if game.score2 %}
+                                <span class="{% if game.winner == game.team2_id %}bracket-winning-score{% endif %}">{{ game.score2 }}</span>
+                            {% endif %}
+                            {% if game.odds2 %}<span class="bracket-odds">{{ game.odds2 }}</span>{% endif %}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% if current_week == 15 and postseason_home.bracket_byes %}
+    <div class="bracket-byes">
+        <div class="bracket-byes-title">Byes</div>
+        {% for team in postseason_home.bracket_byes %}
+        <div class="bracket-bye-team">
+            <span class="bracket-seed">{{ team.seed }}</span>
+            {{ team.team }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</section>
+{% endif %}
+
+{% if is_playoff_week and current_week == 15 and postseason_home.bootyman_matchup %}
+<section class="postseason-feature">
+    <img class="postseason-title-logo" src="/{{ postseason_home.bootyman_bowl_logo }}" alt="Bootyman Bowl">
+    <div class="logo-vs-row">
+        {% for team in postseason_home.bootyman_matchup.teams %}
+        <div class="logo-vs-team">
+            {% if team.logo %}
+                <img class="logo-vs-img" src="/{{ team.logo }}" alt="{{ team.team }} logo">
+            {% endif %}
+            <div class="logo-vs-name">{{ team.team }}</div>
+        </div>
+        {% if loop.first %}
+            <div class="logo-vs-text">VS</div>
+        {% endif %}
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if is_playoff_week and current_week == 16 and postseason_home.this_year_bootyman %}
+<section class="bootyman-callout">
+    <h2>Congrats to This Year's Bootyman!</h2>
+    {% if postseason_home.this_year_bootyman.logo %}
+        <img class="bootyman-logo" src="/{{ postseason_home.this_year_bootyman.logo }}" alt="{{ postseason_home.this_year_bootyman.team }} logo">
+    {% endif %}
+    <div class="bootyman-team">{{ postseason_home.this_year_bootyman.team }}</div>
+</section>
+{% endif %}
+
+{% if is_playoff_week and current_week == 17 and postseason_home.championship_matchup %}
+<section class="postseason-feature">
+    <img class="postseason-title-logo" src="/{{ postseason_home.nut_cup_logo }}" alt="Quest for the Nut Cup">
+    <div class="logo-vs-row">
+        {% for team in postseason_home.championship_matchup.teams %}
+        <div class="logo-vs-team">
+            {% if team.logo %}
+                <img class="logo-vs-img" src="/{{ team.logo }}" alt="{{ team.team }} logo">
+            {% endif %}
+            <div class="logo-vs-name">{{ team.team }}</div>
+        </div>
+        {% if loop.first %}
+            <div class="logo-vs-text">VS</div>
+        {% endif %}
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if is_playoff_week and current_week == 17 %}
+<section class="playoff-bracket-section">
+    <div class="playoff-bracket playoff-bracket-rounds-{{ postseason_home.bracket_rounds|length }}">
+        {% for round in postseason_home.bracket_rounds %}
+        <div class="bracket-round {% if round.week == current_week %}current-bracket-round{% endif %}">
+            <div class="bracket-round-title">{{ round.label }}</div>
+            <div class="bracket-round-games">
+                {% for game in round.games %}
+                <div class="bracket-game {% if game.week == current_week %}current-bracket-game{% endif %}">
+                    <div class="bracket-team-row">
+                        <span class="bracket-team">
+                            {% if game.seed1 %}<span class="bracket-seed">{{ game.seed1 }}</span>{% endif %}
+                            {{ game.team1 }}
+                        </span>
+                        <span class="bracket-meta">
+                            {% if game.score1 %}
+                                <span class="{% if game.winner == game.team1_id %}bracket-winning-score{% endif %}">{{ game.score1 }}</span>
+                            {% endif %}
+                            {% if game.odds1 %}<span class="bracket-odds">{{ game.odds1 }}</span>{% endif %}
+                        </span>
+                    </div>
+                    <div class="bracket-team-row">
+                        <span class="bracket-team">
+                            {% if game.seed2 %}<span class="bracket-seed">{{ game.seed2 }}</span>{% endif %}
+                            {{ game.team2 }}
+                        </span>
+                        <span class="bracket-meta">
+                            {% if game.score2 %}
+                                <span class="{% if game.winner == game.team2_id %}bracket-winning-score{% endif %}">{{ game.score2 }}</span>
+                            {% endif %}
+                            {% if game.odds2 %}<span class="bracket-odds">{{ game.odds2 }}</span>{% endif %}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% if current_week == 15 and postseason_home.bracket_byes %}
+    <div class="bracket-byes">
+        <div class="bracket-byes-title">Byes</div>
+        {% for team in postseason_home.bracket_byes %}
+        <div class="bracket-bye-team">
+            <span class="bracket-seed">{{ team.seed }}</span>
+            {{ team.team }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</section>
+{% endif %}
+
+{% if not is_playoff_week or current_week == 15 %}
 <section class="home-matchup-grid">
     {% if data_prev %}
     <div class="home-table-block">
@@ -45,7 +201,7 @@
     </div>
     {% endif %}
 
-    {% if data_current %}
+    {% if data_current and not is_playoff_week %}
     <div class="home-table-block">
         <h2>This Week's Matchups</h2>
         <div class="tscroll">
@@ -72,8 +228,9 @@
     </div>
     {% endif %}
 </section>
+{% endif %}
 
-{% if last_week_bootyman %}
+{% if last_week_bootyman and (not is_playoff_week or current_week == 15) %}
 <section class="bootyman-callout">
     <h2>Congrats to Last Week's Bootyman:</h2>
     {% if last_week_bootyman.logo %}
@@ -83,12 +240,12 @@
 </section>
 {% endif %}
 
-<h1>Current Standings</h1>
+<h1>{% if is_playoff_week %}Final Standings{% else %}Current Standings{% endif %}</h1>
 <div class="tscroll" style="overflow-x:auto;">
     <table class="table table-hover center content-table standings" style="margin-left: auto; margin-right: auto; width:60%">
         <caption>
             GB-Games back of bye or playoff seed <br>
-            Seeds 1-2 are division winners; seeds 3-5 are wild cards <br>
+            Seeds 1-2 are division winners; seed 3 gets the final bye; seeds 4-5 play in <br>
             c-Clinched bye or playoff spot <br>
             x-Eliminated from bye or playoff spot <br>
             Plus indicates the team is ahead of the cutoff <br>

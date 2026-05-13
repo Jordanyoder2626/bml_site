@@ -10,7 +10,7 @@ data = DataLoader(season)
 params = Params(data)
 teams = Teams(data)
 ps = PlayoffScenarios(data=data, params=params, teams=teams)
-bye_scens = ps.get_new_clinches(seed=2)
+bye_scens = ps.get_new_clinches(seed=3)
 playoff_scens = ps.get_new_clinches(seed=5)
 magic_numbers = ps.get_magic_numbers()
 

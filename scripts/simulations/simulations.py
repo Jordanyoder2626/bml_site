@@ -86,6 +86,9 @@ def get_week_projections(week: int) -> pd.DataFrame:
     projections['season'] = constants.SEASON
     projections['week'] = week
     projections.columns = [c.lower() for c in projections.columns]
+    projections['fpts'] = pd.to_numeric(projections['fpts'], errors='coerce')
+    projections['rec'] = pd.to_numeric(projections['rec'], errors='coerce').fillna(0)
+    projections = projections.dropna(subset=['fpts'])
 
     qb_mask = (projections.position == 'QB') & (projections.fpts > 10)
     rb_mask = (projections.position == 'RB') & (projections.fpts > 5)
@@ -99,6 +102,9 @@ def get_week_projections(week: int) -> pd.DataFrame:
     projections['id'] = (projections.player.str.replace(r'[^a-zA-Z0-9]', '', regex=True)
                          + '_' + projections.season.astype(str)
                          + '_' + projections.week.astype(str).str.zfill(2))
+    if projections.empty:
+        projections['espn_id'] = pd.Series(dtype='Int64')
+        return projections
 
     projections['espn_id'] = projections.apply(
         lambda x: _match_player_to_espn(x['match_on'], players), axis=1

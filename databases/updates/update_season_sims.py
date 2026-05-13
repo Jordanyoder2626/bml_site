@@ -245,7 +245,7 @@ def _simulate_bml_playoffs(
 ) -> tuple[list[str], list[str]]:
     """Simulate the BML 5-team playoff bracket.
 
-    Week 15: 4 seed vs 5 seed.
+    Week 15: 4 seed vs 5 seed; 1-3 seeds have byes.
     Week 16: 1 seed vs 4/5 winner, 2 seed vs 3 seed.
     Week 17: championship game.
     """

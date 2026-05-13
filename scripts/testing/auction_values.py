@@ -760,7 +760,7 @@ def sim_season(teams):
         n_playoffs[team] += 1
 
     # # simulate 1 week of semifinals
-    # # top 2 teams get bye
+    # # top 3 teams get bye
     # byes = p_teams.head(2).values
     # quarter_teams = p_teams.iloc[2:]
     # quarter_scores = (sim_scores(15, quarter_teams, sim_data, posns, struc)
