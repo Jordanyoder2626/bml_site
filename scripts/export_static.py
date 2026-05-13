@@ -19,20 +19,30 @@ ROUTES = {
 
 
 def _relative_prefix(output_file: Path) -> str:
-    depth = len(output_file.parent.parts)
-    return "../" * depth
+    parent = output_file.parent
+    if str(parent) in ("", "."):
+        return ""
+    return "../" * len(parent.parts)
 
 
 def _rewrite_links(html: str, output_file: Path) -> str:
     prefix = _relative_prefix(output_file)
 
+    # Rewrite root-relative assets for GitHub Pages subfolders
     html = re.sub(r'((?:href|src)=["\'])/static/', rf'\1{prefix}static/', html)
     html = re.sub(r'((?:href|src)=["\'])/logos/', rf'\1{prefix}logos/', html)
 
+    # Rewrite root-relative route links
     for route, target in ROUTES.items():
-        href = f'{prefix}{target}'
+        href = f"{prefix}{target}"
         html = html.replace(f'href="{route}"', f'href="{href}"')
         html = html.replace(f"href='{route}'", f"href='{href}'")
+
+    # Catch any other root-relative local href/src links
+    html = html.replace('href="/', f'href="{prefix}')
+    html = html.replace("href='/", f"href='{prefix}")
+    html = html.replace('src="/', f'src="{prefix}')
+    html = html.replace("src='/", f"src='{prefix}")
 
     return html
 
@@ -56,10 +66,13 @@ def export_static(output_dir: Path, clean: bool = True) -> None:
 
             output_file = output_dir / target
             output_file.parent.mkdir(parents=True, exist_ok=True)
+
             html = response.get_data(as_text=True)
+            relative_output_file = output_file.relative_to(output_dir)
+
             output_file.write_text(
-                _rewrite_links(html=html, output_file=Path(target)),
-                encoding="utf-8"
+                _rewrite_links(html=html, output_file=relative_output_file),
+                encoding="utf-8",
             )
 
     shutil.copytree("static", output_dir / "static", dirs_exist_ok=True)
