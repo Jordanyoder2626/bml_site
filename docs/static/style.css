@@ -17,7 +17,7 @@
 }
 
 .navbar-custom .navbar-nav > li > a {
-  	color: #FFD103;
+  	color: #ffffff;
   	opacity: 0.7;
 }
 
@@ -48,7 +48,7 @@
 .navbar-toggler-icon {
     width: 35px;
     height: 4px;
-    background-color: #FFD103;
+    background-color: #ffffff;
     display: block;
     border-radius: 5px;
     transition: all 0.25s;
@@ -95,6 +95,15 @@ body {
     min-width: 1180px;
 }
 
+h1,
+h2,
+h3 {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
 html {
     min-width: 1180px;
 }
@@ -109,6 +118,318 @@ html {
   overflow-x: auto;
 }
 
+.home-matchup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+  width: min(1080px, calc(100% - 48px));
+  margin: 18px auto 34px auto;
+}
+
+.home-page h1 {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 2.3rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.home-page h1:first-of-type {
+  font-size: 5.25rem;
+  line-height: 0.95;
+  padding-bottom: 14px;
+  position: relative;
+}
+
+.home-page h1:first-of-type::after {
+  background-color: #0EB04B;
+  border-radius: 999px;
+  bottom: 0;
+  content: "";
+  height: 6px;
+  left: 50%;
+  position: absolute;
+  transform: translateX(-50%);
+  width: min(620px, 58%);
+}
+
+.home-table-block h2,
+.bootyman-callout h2 {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  text-align: center;
+  margin: 0 0 10px 0;
+}
+
+.home-matchup-grid .home-table-block:only-child {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: min(540px, 100%);
+}
+
+.home-matchup-grid .tscroll {
+  min-width: 0;
+}
+
+.home-summary-table {
+  width: 100%;
+  table-layout: auto;
+  border: 1px solid #d0d0d0;
+}
+
+.home-summary-table th[colspan="2"] {
+  text-align: center;
+}
+
+.home-summary-table tbody td.home-team-cell {
+  color: #0D1641;
+  font-weight: 400;
+}
+
+.home-summary-table tbody td.home-away-team-cell {
+  border-left: 1px solid #dddddd;
+}
+
+.winning-score {
+  color: #0EB04B;
+  font-weight: 800;
+  background-color: rgba(14, 176, 75, 0.08);
+}
+
+.low-score-icon {
+  color: #7a4b24;
+  margin-left: 5px;
+}
+
+.bootyman-callout {
+  text-align: center;
+  padding: 18px 0 22px 0;
+  margin: 12px auto 38px auto;
+}
+
+.bootyman-logo {
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 6px;
+  display: block;
+  margin: 8px auto;
+}
+
+.bootyman-team {
+  color: #0D1641;
+  font-size: 1.25rem;
+  font-weight: 650;
+}
+
+.postseason-feature,
+.playoff-bracket-section {
+  text-align: center;
+  width: min(980px, calc(100% - 48px));
+  margin: 18px auto 34px auto;
+}
+
+.postseason-title-logo {
+  display: block;
+  max-width: 680px;
+  max-height: 310px;
+  object-fit: contain;
+  margin: 0 auto 26px auto;
+}
+
+.logo-vs-row {
+  align-items: center;
+  display: flex;
+  gap: 26px;
+  justify-content: center;
+}
+
+.logo-vs-team {
+  min-width: 180px;
+  text-align: center;
+}
+
+.logo-vs-img {
+  border-radius: 6px;
+  display: block;
+  height: 190px;
+  margin: 0 auto 10px auto;
+  object-fit: cover;
+  object-position: center;
+  width: 190px;
+}
+
+.logo-vs-name {
+  color: #0D1641;
+  font-size: 1.15rem;
+  font-weight: 650;
+}
+
+.logo-vs-text {
+  color: #0D1641;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 2.2rem;
+  font-weight: 800;
+}
+
+.playoff-bracket {
+  align-items: center;
+  display: grid;
+  gap: 28px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 360px));
+  justify-content: center;
+  margin: 0 auto;
+  position: relative;
+}
+
+.playoff-bracket-rounds-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(1120px, 100%);
+}
+
+.bracket-round {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 250px;
+  position: relative;
+}
+
+.bracket-round:not(:last-child)::after {
+  content: none;
+}
+
+.bracket-round-title {
+  color: #0D1641;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 1.45rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.bracket-round-games {
+  display: flex;
+  flex-direction: column;
+  gap: 42px;
+  justify-content: center;
+}
+
+.bracket-game {
+  background-color: #ffffff;
+  border: 1px solid #c8c8c8;
+  border-left: 5px solid #0EB04B;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(13, 22, 65, 0.08);
+  overflow: visible;
+  position: relative;
+}
+
+.bracket-game::after {
+  content: none;
+}
+
+.bracket-round:last-child .bracket-game::after {
+  content: none;
+}
+
+.current-bracket-game {
+  border-color: #0D1641;
+  border-left-color: #0D1641;
+  box-shadow: 0 0 0 2px rgba(13, 22, 65, 0.08);
+}
+
+.bracket-team-row {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  min-height: 46px;
+  padding: 10px 13px;
+}
+
+.bracket-team-row + .bracket-team-row {
+  border-top: 1px solid #e0e0e0;
+}
+
+.bracket-team {
+  color: #0D1641;
+  text-align: left;
+}
+
+.bracket-seed {
+  background-color: #0D1641;
+  border-radius: 3px;
+  color: #ffffff;
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-right: 7px;
+  min-width: 21px;
+  padding: 4px 6px;
+  text-align: center;
+}
+
+.bracket-meta {
+  font-weight: 700;
+  min-width: 78px;
+  text-align: right;
+}
+
+.bracket-odds {
+  color: #0D1641;
+  display: inline-block;
+  font-weight: 800;
+  margin-left: 8px;
+}
+
+.bracket-winning-score {
+  background-color: rgba(14, 176, 75, 0.12);
+  border-radius: 3px;
+  color: #0EB04B;
+  display: inline-block;
+  font-weight: 800;
+  padding: 2px 5px;
+}
+
+.bracket-byes {
+  background-color: #ffffff;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(13, 22, 65, 0.06);
+  display: inline-flex;
+  gap: 14px;
+  margin: 22px auto 0 auto;
+  padding: 12px 16px;
+}
+
+.bracket-byes-title {
+  color: #0D1641;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.bracket-bye-team {
+  color: #0D1641;
+  white-space: nowrap;
+}
+
+.empty-power-rank-note {
+  color: #0D1641;
+  font-size: 1.1rem;
+  text-align: center;
+  margin: 18px auto 34px auto;
+}
+
 
 /* format standings table to show playoff cutoffs */
 .standings tbody tr.division-east {
@@ -116,6 +437,34 @@ html {
 }
 
 .standings tbody tr.division-west {
+  background-color: rgba(13, 22, 65, 0.11);
+}
+
+.division-key {
+  margin: 6px auto 0 auto;
+  text-align: center;
+  font-size: 0.9em;
+}
+
+.division-key-item {
+  display: inline-block;
+  margin: 0 4px;
+}
+
+.division-key-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 4px;
+  border: 1px solid #cfcfcf;
+  vertical-align: -2px;
+}
+
+.division-key-east {
+  background-color: rgba(14, 176, 75, 0.12);
+}
+
+.division-key-west {
   background-color: rgba(13, 22, 65, 0.11);
 }
 
@@ -319,6 +668,9 @@ text{
 .title{
    font-size: 2em;
    fill: black;
+   font-family: "Barlow Condensed", sans-serif;
+   font-weight: 800;
+   letter-spacing: 0;
 }
 
 circle {
