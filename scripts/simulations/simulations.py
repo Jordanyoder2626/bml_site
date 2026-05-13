@@ -109,7 +109,6 @@ def get_week_projections(week: int) -> pd.DataFrame:
 
 def query_projections_db(season: int,
                          week: int) -> pd.DataFrame:
-    cols = ['id', 'season', 'week', 'name', 'espn_id', 'position', 'receptions', 'projection', 'created']
     with Database() as conn:
         c = conn.cursor()
         query = f'''
@@ -122,7 +121,7 @@ def query_projections_db(season: int,
         if not result:
             return pd.DataFrame(columns=['name', 'espn_id', 'projection'])
         df = pd.DataFrame(result)
-        df.columns = cols
+        df.columns = [col[0] for col in c.description]
     return df[['name', 'espn_id', 'projection']]
 
 

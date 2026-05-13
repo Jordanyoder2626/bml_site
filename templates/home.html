@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<main class="home-page">
+<br>
+<h1>{{ week }} Breakdown</h1>
+
+<section class="home-matchup-grid">
+    {% if data_prev %}
+    <div class="home-table-block">
+        <h2>Last Week's Scores</h2>
+        <div class="tscroll">
+            <table class="table table-hover center content-table home-summary-table">
+                <thead>
+                    <tr>
+                        <th>Home</th>
+                        <th colspan="2">Score</th>
+                        <th>Away</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for row in data_prev %}
+                    <tr>
+                        <td class="home-team-cell">
+                            {{ row[0] }}
+                            {% if previous_week_low_score is not none and row[1]|float == previous_week_low_score|float %}
+                                <i class="fa fa-poop low-score-icon" aria-hidden="true"></i>
+                            {% endif %}
+                        </td>
+                        <td class="{% if row[1]|float > row[2]|float %}winning-score{% endif %}">{{ row[1] }}</td>
+                        <td class="{% if row[2]|float > row[1]|float %}winning-score{% endif %}">
+                            {{ row[2] }}
+                        </td>
+                        <td class="home-team-cell home-away-team-cell">
+                            {{ row[3] }}
+                            {% if previous_week_low_score is not none and row[2]|float == previous_week_low_score|float %}
+                                <i class="fa fa-poop low-score-icon" aria-hidden="true"></i>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if data_current %}
+    <div class="home-table-block">
+        <h2>This Week's Matchups</h2>
+        <div class="tscroll">
+            <table class="table table-hover center content-table home-summary-table">
+                <thead>
+                    <tr>
+                        <th>Home</th>
+                        <th colspan="2">Odds</th>
+                        <th>Away</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for row in data_current %}
+                    <tr>
+                        <td class="home-team-cell">{{ row[0] }}</td>
+                        <td>{{ row[1]|safe }}</td>
+                        <td>{{ row[2]|safe }}</td>
+                        <td class="home-team-cell home-away-team-cell">{{ row[3] }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</section>
+
+{% if last_week_bootyman %}
+<section class="bootyman-callout">
+    <h2>Congrats to Last Week's Bootyman:</h2>
+    {% if last_week_bootyman.logo %}
+        <img class="bootyman-logo" src="/{{ last_week_bootyman.logo }}" alt="{{ last_week_bootyman.team }} logo">
+    {% endif %}
+    <div class="bootyman-team">{{ last_week_bootyman.team }}</div>
+</section>
+{% endif %}
+
+<h1>Current Standings</h1>
+<div class="tscroll" style="overflow-x:auto;">
+    <table class="table table-hover center content-table standings" style="margin-left: auto; margin-right: auto; width:60%">
+        <caption>
+            GB-Games back of bye or playoff seed <br>
+            Seeds 1-2 are division winners; seeds 3-5 are wild cards <br>
+            c-Clinched bye or playoff spot <br>
+            x-Eliminated from bye or playoff spot <br>
+            Plus indicates the team is ahead of the cutoff <br>
+            Divisions:
+            <span class="division-key-item"><span class="division-key-swatch division-key-east"></span>East</span>
+            <span class="division-key-item"><span class="division-key-swatch division-key-west"></span>West</span>
+        </caption>
+        <thead>
+            <tr>
+                {% for header in headings_st %}
+                    <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in data_st %}
+            <tr class='{% if row[1] in ["King's Landing", "Gustavo", "The Warriors", "Gruden's Grinders", "Mighty Acorns"] %}division-east{% else %}division-west{% endif %}'>
+                {% for cell in row %}
+                    <td>{{ cell }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+</main>
+{% endblock %}

@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROUTES = {
     "/": "index.html",
+    "/power-rankings/": "power-rankings/index.html",
     "/simulations/": "simulations/index.html",
     "/scenarios/": "scenarios/index.html",
     "/efficiency/": "efficiency/index.html",
@@ -26,6 +27,7 @@ def _rewrite_links(html: str, output_file: Path) -> str:
     prefix = _relative_prefix(output_file)
 
     html = re.sub(r'((?:href|src)=["\'])/static/', rf'\1{prefix}static/', html)
+    html = re.sub(r'((?:href|src)=["\'])/logos/', rf'\1{prefix}logos/', html)
 
     for route, target in ROUTES.items():
         href = f'{prefix}{target}'
@@ -61,6 +63,7 @@ def export_static(output_dir: Path, clean: bool = True) -> None:
             )
 
     shutil.copytree("static", output_dir / "static", dirs_exist_ok=True)
+    shutil.copytree("logos", output_dir / "logos", dirs_exist_ok=True)
 
 
 def main() -> None:

@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, send_from_directory
 from flask_fontawesome import FontAwesome
 
 import scripts.utils.utils as ut
@@ -17,9 +17,28 @@ fa = FontAwesome(app)
 @app.route("/")
 def home():
     week_str = f'Week {week}'
-    power_week_str = f'Week {power_display_week}'
     headings_st = tuple(['Rk', 'Team', 'Overall', 'Division', 'Win%', 'Points', 'Bye GB', 'Playoff GB'])
     data_st = ut.flask_get_data(standings_df[STANDINGS_COLUMNS_FLASK])
+
+    data_prev = ut.flask_get_data(previous_week_results)
+
+    data_current = ut.flask_get_data(current_week_matchup_rows)
+
+    return render_template(
+        "home.html", week=week_str,
+        headings_st=headings_st, data_st=data_st,
+        data_prev=data_prev,
+        data_current=data_current,
+        previous_week=previous_week,
+        current_week=params.current_week,
+        previous_week_low_score=previous_week_low_score,
+        last_week_bootyman=last_week_bootyman
+    )
+
+@app.route("/power-rankings/")
+def power_rankings():
+    week_str = f'Week {week}'
+    power_week_str = f'Week {power_display_week}'
 
     cl_cols = ['Scenario', 'Probability']
     headings_cl = tuple(cl_cols) if clinches['clinches'] else tuple()
@@ -39,7 +58,6 @@ def home():
 
     return render_template(
         "powerrank.html", week=week_str,
-        headings_st=headings_st, data_st=data_st,
         headings_cl=headings_cl, data_cl=data_cl,
         headings_el=headings_el, data_el=data_el,
         headings_bb=headings_bb, data_bb=data_bb,
@@ -48,6 +66,10 @@ def home():
         power_week=power_week_str,
         rank_data=rank_data
     )
+
+@app.route("/logos/<path:filename>")
+def logos(filename):
+    return send_from_directory("logos", filename)
 
 @app.route("/simulations/")
 def sims():

@@ -15,38 +15,6 @@ table.center {
 caption {font-size: small;}
 
 </style>
-<h1>{{ week }} Standings</h1>
-<div class="tscroll" style="overflow-x:auto;">
-    <table class="table table-hover center content-table standings" style="margin-left: auto; margin-right: auto; width:60%">
-        <caption>
-            GB-Games back of bye or playoff seed <br>
-            Seeds 1-2 are division winners; seeds 3-5 are wild cards <br>
-            c-Clinched bye or playoff spot <br>
-            x-Eliminated from bye or playoff spot <br>
-            Plus indicates the team is ahead of the cutoff <br>
-            Divisions:
-            <span class="division-key-item"><span class="division-key-swatch division-key-east"></span>East</span>
-            <span class="division-key-item"><span class="division-key-swatch division-key-west"></span>West</span>
-        </caption>
-        <thead>
-            <tr>
-                {% for header in headings_st %}
-                    <th>{{ header }}</th>
-                {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-        {% for row in data_st %}
-            <tr class='{% if row[1] in ["King's Landing", "Gustavo", "The Warriors", "Gruden's Grinders", "Mighty Acorns"] %}division-east{% else %}division-west{% endif %}'>
-                {% for cell in row %}
-                    <td>{{ cell }}</td>
-                {% endfor %}
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-</div>
-<br>
 {% if data_cl %}
 <h1>Clinching Scenarios</h1>
 <div class="tscroll" style="overflow-x:auto;">
@@ -326,10 +294,12 @@ caption {font-size: small;}
     });
 
     g.append("text")
-  	  .attr("class", "title")
+      .attr("class", "title")
       .attr("x", (innerWidth-300)/4)
   	  .attr("y", -10)
+  	  .style("font-family", "Barlow Condensed, sans-serif")
   	  .style("font-size", "32px")
+  	  .style("font-weight", "800")
   	  .text("Weekly Power Ranks");
 };
 
@@ -504,10 +474,12 @@ render(data, 'power_rank', 50);
     });
 
     g.append("text")
-  	  .attr("class", "title")
+      .attr("class", "title")
       .attr("x", (innerWidth-300)/4)
   	  .attr("y", -10)
+  	  .style("font-family", "Barlow Condensed, sans-serif")
   	  .style("font-size", "32px")
+  	  .style("font-weight", "800")
   	  .text("Weekly Power Scores");
 };
 

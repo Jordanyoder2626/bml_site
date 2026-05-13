@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from datetime import datetime as dt
 
 import pandas as pd
@@ -24,6 +25,28 @@ MANAGER_TO_TEAM_NAME = {
 
 def display_team_name(name: str) -> str:
     return MANAGER_TO_TEAM_NAME.get(name, name)
+
+
+def manager_display_name(team_id: int) -> str:
+    owner_id = teams.teamid_to_primowner[team_id]
+    return constants.TEAM_IDS[owner_id]['name']['display']
+
+
+def team_display_name(team_id: int) -> str:
+    return display_team_name(manager_display_name(team_id))
+
+
+def _format_score(score) -> str:
+    return f'{float(score):.2f}'
+
+
+def _logo_path(manager_name: str) -> str:
+    logo_dir = Path('logos')
+    matches = sorted(logo_dir.glob(f'{manager_name}.*'))
+    if not matches:
+        exact = logo_dir / manager_name
+        matches = [exact] if exact.exists() else []
+    return f'logos/{matches[0].name}' if matches else ''
 
 
 def display_team_values(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
@@ -471,6 +494,68 @@ clinches['bootyman'] = format_bootyman_scenario_statements(
     clinches['bootyman']
 )
 
+all_matchups = teams._fetch_matchups()
+previous_week_results = []
+previous_week_low_score = None
+if previous_week >= 1:
+    for matchup in all_matchups:
+        if matchup['week'] != previous_week or 'team2' not in matchup:
+            continue
+        scores = [matchup['score1'], matchup['score2']]
+        week_low = min(scores)
+        previous_week_low_score = (
+            week_low
+            if previous_week_low_score is None
+            else min(previous_week_low_score, week_low)
+        )
+        previous_week_results.append([
+            team_display_name(matchup['team1']),
+            _format_score(matchup['score1']),
+            _format_score(matchup['score2']),
+            team_display_name(matchup['team2'])
+        ])
+
+current_week_matchups = []
+for matchup in all_matchups:
+    if matchup['week'] != params.current_week or 'team2' not in matchup:
+        continue
+    current_week_matchups.append({
+        'matchup_id': simulations.get_matchup_id(
+            teams=teams,
+            week=params.current_week,
+            team_id=matchup['team1']
+        ),
+        'team1': team_display_name(matchup['team1']),
+        'team2': team_display_name(matchup['team2'])
+    })
+
+last_week_bootyman = None
+if (
+    params.current_week != 1
+    and params.current_week <= params.regular_season_end
+    and previous_week >= 1
+):
+    previous_scores = []
+    for matchup in all_matchups:
+        if matchup['week'] != previous_week:
+            continue
+        previous_scores.append((matchup['team1'], matchup['score1']))
+        if 'team2' in matchup:
+            previous_scores.append((matchup['team2'], matchup['score2']))
+
+    if previous_scores:
+        bootyman_team_id, bootyman_score = min(
+            previous_scores,
+            key=lambda item: item[1]
+        )
+        bootyman_manager = manager_display_name(bootyman_team_id)
+        last_week_bootyman = {
+            'team': team_display_name(bootyman_team_id),
+            'manager': bootyman_manager,
+            'score': _format_score(bootyman_score),
+            'logo': _logo_path(bootyman_manager)
+        }
+
 
 pr_data = db_pr.retrieve_data(how='season')
 pr_cols = ['team', 'total_points', 'weekly_points', 'consistency', 'manager', 'luck', 'power_rank', 'rank_change', 'power_score_norm', 'score_norm_change']
@@ -494,7 +579,7 @@ else:
 # SIMULATIONS PAGE
 if betting_table.empty:
     timestamp_betting = 'No data'
-    betting_table = pd.DataFrame(columns=['team', 'avg_score', 'p_win', 'p_tophalf', 'p_highest', 'p_lowest'])
+    betting_table = pd.DataFrame(columns=['matchup_id', 'team', 'avg_score', 'p_win', 'p_tophalf', 'p_highest', 'p_lowest'])
 else:
     timestamp_betting = pd.to_datetime(betting_table.created.max()).strftime("%A, %b %d %Y")
     betting_table = betting_table.sort_values(['matchup_id', 'avg_score'])
@@ -504,6 +589,19 @@ else:
     betting_table['p_highest'] = betting_table.p_highest.apply(lambda x: simulations.calculate_odds(init_prob=x))
     betting_table['p_lowest'] = betting_table.p_lowest.apply(lambda x: simulations.calculate_odds(init_prob=x))
     betting_table = display_team_values(betting_table, ['team'])
+
+current_week_matchup_rows = []
+for matchup in current_week_matchups:
+    matchup_odds = betting_table[
+        betting_table.matchup_id == matchup['matchup_id']
+    ] if 'matchup_id' in betting_table.columns else pd.DataFrame()
+    odds_by_team = dict(zip(matchup_odds.team, matchup_odds.p_win))
+    current_week_matchup_rows.append([
+        matchup['team1'],
+        odds_by_team.get(matchup['team1'], '-'),
+        odds_by_team.get(matchup['team2'], '-'),
+        matchup['team2']
+    ])
 
 keep_cols = ['team', 'projected_wins', 'projected_losses', 'total_points', 'playoffs', 'finals', 'champion']
 if season_sim_table.empty:
