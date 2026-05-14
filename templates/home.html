@@ -321,8 +321,9 @@
         <caption>
             GB-Games back of bye or playoff seed <br>
             Seeds 1-2 are division winners; seed 3 gets the final bye; seeds 4-5 play in <br>
-            c-Clinched bye or playoff spot <br>
+            c-Clinched bye, playoff spot, or Bootyman Bowl <br>
             x-Eliminated from bye or playoff spot <br>
+            {% if show_bootyman_status %}e-Escaped Bootyman Bowl <br>{% endif %}
             Plus indicates the team is ahead of the cutoff <br>
             Divisions:
             <span class="division-key-item"><span class="division-key-swatch division-key-east"></span>East</span>
@@ -337,7 +338,7 @@
         </thead>
         <tbody>
         {% for row in data_st %}
-            <tr class='{% if row[1] in ["King's Landing", "Gustavo", "The Warriors", "Gruden's Grinders", "Mighty Acorns"] %}division-east{% else %}division-west{% endif %}'>
+            <tr class='{% if row[1] in ["King's Landing", "Gustavo", "The Warriors", "Gruden's Grinders", "Mighty Acorns"] %}division-east{% else %}division-west{% endif %}{% if row[0] == 3 %} bye-cutoff{% endif %}{% if row[0] == 5 %} playoff-cutoff{% endif %}'>
                 {% for cell in row %}
                     <td>{{ cell }}</td>
                 {% endfor %}

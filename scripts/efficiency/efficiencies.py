@@ -1,5 +1,4 @@
-import io
-import base64
+from pathlib import Path
 
 from scripts.api.Settings import Params
 from scripts.api.Rosters import Rosters
@@ -11,8 +10,21 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 matplotlib.use('Agg')
+
+
+EFFICIENCY_OUTPUT_DIR = Path('efficiency')
+
+
+def _efficiency_image_path(season: int, week: int) -> Path:
+    return EFFICIENCY_OUTPUT_DIR / f'efficiency_{season}_week_{week}.png'
+
+
+def _save_efficiency_figure(fig, season: int, week: int) -> str:
+    EFFICIENCY_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    save_path = _efficiency_image_path(season=season, week=week)
+    fig.savefig(save_path, dpi=300, bbox_inches='tight')
+    return f'/efficiency/{save_path.name}'
 
 
 def _plot_placeholder(message: str, season: int, week: int) -> str:
@@ -32,16 +44,9 @@ def _plot_placeholder(message: str, season: int, week: int) -> str:
     )
     plt.title(f"Efficiency Through Week {week}, {season}")
 
-    png_img = io.BytesIO()
-    FigureCanvas(fig).print_png(png_img)
+    image_path = _save_efficiency_figure(fig=fig, season=season, week=week)
     plt.close(fig)
-
-    png_str = "data:image/png;base64,"
-    png_str += base64.b64encode(
-        png_img.getvalue()
-    ).decode('utf8')
-
-    return png_str
+    return image_path
 
 
 def get_optimal_points(params: Params,
@@ -519,23 +524,10 @@ def plot_efficiency(season: int,
     plt.setp(ax.spines.values(), color='lightgrey')
 
     # ============================================================
-    # CONVERT PLOT TO BASE64
-    # ============================================================
-
-    png_img = io.BytesIO()
-
-    FigureCanvas(fig).print_png(png_img)
-
-    png_str = "data:image/png;base64,"
-    png_str += base64.b64encode(
-        png_img.getvalue()
-    ).decode('utf8')
-
-    # ============================================================
     # SAVE LOCALLY
     # ============================================================
 
-    save_path = f"efficiency_{season}_week_{week}.png"
-    fig.savefig(save_path, dpi=300, bbox_inches='tight')
+    image_path = _save_efficiency_figure(fig=fig, season=season, week=week)
+    plt.close(fig)
 
-    return png_str
+    return image_path
