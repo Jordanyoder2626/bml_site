@@ -24,11 +24,25 @@ def home():
 
     data_current = ut.flask_get_data(current_week_matchup_rows)
 
+    show_scenarios = params.current_week <= params.regular_season_end
+    scenario_cols = ['Scenario', 'Probability']
+    headings_cl = tuple(scenario_cols) if show_scenarios and clinches['clinches'] else tuple()
+    data_cl = ut.flask_get_data(clinches['clinches']) if show_scenarios and clinches['clinches'] else tuple()
+
+    headings_el = tuple(scenario_cols) if show_scenarios and clinches['eliminations'] else tuple()
+    data_el = ut.flask_get_data(clinches['eliminations']) if show_scenarios and clinches['eliminations'] else tuple()
+
+    headings_bb = tuple(scenario_cols) if show_scenarios and clinches['bootyman'] else tuple()
+    data_bb = ut.flask_get_data(clinches['bootyman']) if show_scenarios and clinches['bootyman'] else tuple()
+
     return render_template(
         "home.html", week=week_str,
         headings_st=headings_st, data_st=data_st,
         data_prev=data_prev,
         data_current=data_current,
+        headings_cl=headings_cl, data_cl=data_cl,
+        headings_el=headings_el, data_el=data_el,
+        headings_bb=headings_bb, data_bb=data_bb,
         previous_week=previous_week,
         current_week=params.current_week,
         previous_week_low_score=previous_week_low_score,
@@ -42,28 +56,12 @@ def power_rankings():
     week_str = f'Week {week}'
     power_week_str = power_display_week
 
-    cl_cols = ['Scenario', 'Probability']
-    show_scenarios = params.current_week <= params.regular_season_end
-    headings_cl = tuple(cl_cols) if show_scenarios and clinches['clinches'] else tuple()
-    data_cl = ut.flask_get_data(clinches['clinches']) if show_scenarios and clinches['clinches'] else tuple()
-
-    el_cols = ['Scenario', 'Probability']
-    headings_el = tuple(el_cols) if show_scenarios and clinches['eliminations'] else tuple()
-    data_el = ut.flask_get_data(clinches['eliminations']) if show_scenarios and clinches['eliminations'] else tuple()
-
-    bb_cols = ['Scenario', 'Probability']
-    headings_bb = tuple(bb_cols) if show_scenarios and clinches['bootyman'] else tuple()
-    data_bb = ut.flask_get_data(clinches['bootyman']) if show_scenarios and clinches['bootyman'] else tuple()
-
     show_power_rankings = not pr_table.empty
     headings_pr = tuple(['Team', 'Season', 'Recency', 'Consistency', 'Manager', 'Luck', 'Rank', '1 Week \u0394', 'Score', '1 Week \u0394'])
     data_pr = ut.flask_get_data(pr_table[pr_cols]) if show_power_rankings else tuple()
 
     return render_template(
         "powerrank.html", week=week_str,
-        headings_cl=headings_cl, data_cl=data_cl,
-        headings_el=headings_el, data_el=data_el,
-        headings_bb=headings_bb, data_bb=data_bb,
         headings_pr=headings_pr, data_pr=data_pr,
         show_power_rankings=show_power_rankings,
         power_week=power_week_str,

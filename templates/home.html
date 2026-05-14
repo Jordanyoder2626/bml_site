@@ -240,6 +240,81 @@
 </section>
 {% endif %}
 
+{% if data_cl %}
+<h1>Clinching Scenarios</h1>
+<div class="tscroll" style="overflow-x:auto;">
+    <table class="table table-hover center content-table home-scenario-table" style="table-layout:auto; width:62.5%">
+        <thead>
+            <tr>
+                {% for header in headings_cl %}
+                    <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in data_cl %}
+            <tr>
+                {% for cell in row %}
+                    <td>{{ cell|safe }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+<br>
+{% endif %}
+
+{% if data_el %}
+<h1>Elimination Scenarios</h1>
+<div class="tscroll" style="overflow-x:auto;">
+    <table class="table table-hover center content-table home-scenario-table" style="table-layout:auto; width:62.5%">
+        <thead>
+            <tr>
+                {% for header in headings_el %}
+                    <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in data_el %}
+            <tr>
+                {% for cell in row %}
+                    <td>{{ cell|safe }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+<br>
+{% endif %}
+
+{% if data_bb %}
+<h1>Bootyman Bowl Scenarios</h1>
+<div class="tscroll" style="overflow-x:auto;">
+    <table class="table table-hover center content-table home-scenario-table" style="table-layout:auto; width:62.5%">
+        <thead>
+            <tr>
+                {% for header in headings_bb %}
+                    <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in data_bb %}
+            <tr>
+                {% for cell in row %}
+                    <td>{{ cell|safe }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+<br>
+{% endif %}
+
 <h1>{% if is_playoff_week %}Final Standings{% else %}Current Standings{% endif %}</h1>
 <div class="tscroll" style="overflow-x:auto;">
     <table class="table table-hover center content-table standings" style="margin-left: auto; margin-right: auto; width:60%">

@@ -137,21 +137,40 @@ def _display_team_series(names: str) -> str:
     return f'{", ".join(teams[:-1])}, or {teams[-1]}'
 
 
+def _display_team_or_series(teams: list[str]) -> str:
+    display_teams = [display_team_name(team) for team in teams]
+
+    if len(display_teams) <= 1:
+        return display_teams[0] if display_teams else ''
+    if len(display_teams) == 2:
+        return ' or '.join(display_teams)
+    return f'{", ".join(display_teams[:-1])}, or {display_teams[-1]}'
+
+
 def _net_result_phrase(net_wins: int, other_teams: str, scenario_type: str) -> str:
+    team_count = len([
+        team
+        for team in str(other_teams).split(',')
+        if team.strip()
+    ])
     other_teams = _display_team_series(other_teams)
+    loss_phrase = 'a loss by' if team_count <= 1 else 'losses by'
+    win_phrase = 'a win by' if team_count <= 1 else 'wins by'
+    loses_verb = 'loses' if team_count <= 1 else 'lose'
+    wins_verb = 'wins' if team_count <= 1 else 'win'
 
     if scenario_type == 'clinch':
         if net_wins >= 1:
-            return f'with a win and a loss by {other_teams}'
+            return f'with a win plus {loss_phrase} {other_teams}'
         if net_wins == 0:
-            return f'with the same result or better than {other_teams}'
-        return f'even with a loss if {other_teams} wins'
+            return f'by matching or better than {other_teams}'
+        return f'with a loss if {other_teams} {wins_verb}'
 
     if net_wins >= 1:
-        return f'even with a win and a loss by {other_teams}'
+        return f'even with a win if {other_teams} {loses_verb}'
     if net_wins == 0:
-        return f'with the same result or worse than {other_teams}'
-    return f'with a loss and a win by {other_teams}'
+        return f'by matching or worse than {other_teams}'
+    return f'with a loss plus {win_phrase} {other_teams}'
 
 
 def _visible_probability(probability: str) -> bool:
@@ -162,6 +181,156 @@ def _team_verb(team_name: str, singular: str, plural: str) -> str:
     return plural if team_name.endswith('s') else singular
 
 
+def _format_threshold_phrases(display_team: str,
+                              thresholds: list[dict],
+                              scenario_type: str) -> list[str]:
+    phrases = []
+
+    for threshold in thresholds:
+        other_team = display_team_name(threshold['team'])
+        points = f"{float(threshold['points']):.2f}"
+
+        if threshold['direction'] == 'other_needs':
+            if scenario_type == 'clinch':
+                phrase = (
+                    f'{display_team} must not get outscored by '
+                    f'{other_team} (+{points})'
+                )
+            else:
+                phrase = (
+                    f'{other_team} needs +{points} vs {display_team} '
+                    f'to keep them out'
+                )
+        else:
+            if scenario_type == 'clinch':
+                phrase = f'{display_team} must outscore {other_team} (+{points})'
+            else:
+                phrase = f'{display_team} needs +{points} vs {other_team} to pass'
+
+        phrases.append(phrase)
+
+    return phrases
+
+
+def _format_tiebreaker_sentence(team: str,
+                                metadata: dict | None,
+                                scenario_type: str) -> str:
+    if not metadata:
+        return ''
+
+    if metadata.get('type') != 'final_week_playoff_tiebreaker':
+        return ''
+
+    thresholds = metadata.get('thresholds', [])
+    if not thresholds:
+        return ''
+
+    team_count = len(thresholds)
+    display_team = display_team_name(team)
+    other_teams = _display_team_or_series([
+        threshold['team']
+        for threshold in thresholds
+    ])
+    loses_verb = 'loses' if team_count <= 1 else 'lose'
+    wins_verb = 'wins' if team_count <= 1 else 'win'
+    phrases = _format_threshold_phrases(
+        display_team=display_team,
+        thresholds=thresholds,
+        scenario_type=scenario_type
+    )
+
+    if len(phrases) == 1:
+        threshold_text = phrases[0]
+    else:
+        threshold_text = '; '.join(phrases)
+
+    if scenario_type == 'clinch':
+        return (
+            f' If {display_team} loses and {other_teams} {wins_verb}: '
+            f'{threshold_text}.'
+        )
+
+    return (
+        f' If {display_team} wins and {other_teams} {loses_verb}: '
+        f'{threshold_text}.'
+    )
+
+
+def _format_bootyman_threshold_phrases(display_team: str,
+                                       thresholds: list[dict],
+                                       scenario_type: str) -> list[str]:
+    phrases = []
+
+    for threshold in thresholds:
+        other_team = display_team_name(threshold['team'])
+        points = f"{float(threshold['points']):.2f}"
+
+        if threshold['direction'] == 'other_needs':
+            if scenario_type == 'escape':
+                phrase = (
+                    f'{display_team} must not get outscored by '
+                    f'{other_team} (+{points})'
+                )
+            else:
+                phrase = (
+                    f'{other_team} needs +{points} vs {display_team} '
+                    f'to push them in'
+                )
+        else:
+            if scenario_type == 'escape':
+                phrase = f'{display_team} must outscore {other_team} (+{points})'
+            else:
+                phrase = (
+                    f'{display_team} must outscore {other_team} (+{points}) '
+                    f'to avoid it'
+                )
+
+        phrases.append(phrase)
+
+    return phrases
+
+
+def _format_bootyman_tiebreaker_sentence(team: str,
+                                         metadata: dict | None,
+                                         scenario_type: str) -> str:
+    if not metadata:
+        return ''
+
+    if metadata.get('type') != 'final_week_bootyman_tiebreaker':
+        return ''
+
+    thresholds = metadata.get('thresholds', [])
+    if not thresholds:
+        return ''
+
+    team_count = len(thresholds)
+    display_team = display_team_name(team)
+    other_teams = _display_team_or_series([
+        threshold['team']
+        for threshold in thresholds
+    ])
+    wins_verb = 'wins' if team_count <= 1 else 'win'
+    loses_verb = 'loses' if team_count <= 1 else 'lose'
+    threshold_text = '; '.join(
+        _format_bootyman_threshold_phrases(
+            display_team=display_team,
+            thresholds=thresholds,
+            scenario_type=scenario_type
+        )
+    )
+
+    if scenario_type == 'escape':
+        return (
+            f' If {display_team} loses and {other_teams} {wins_verb}: '
+            f'{threshold_text}.'
+        )
+
+    return (
+        f' If {display_team} wins and {other_teams} {loses_verb}: '
+        f'{threshold_text}.'
+    )
+
+
 def format_scenario_statements(rows: list[list], scenario_type: str) -> list[list]:
     formatted_rows = []
 
@@ -169,7 +338,9 @@ def format_scenario_statements(rows: list[list], scenario_type: str) -> list[lis
         if len(row) < 5:
             continue
 
-        team, target, net_wins, other_teams, probability = row[:5]
+        team, target, net_wins, other_teams = row[:4]
+        metadata = row[4] if len(row) > 5 and isinstance(row[4], dict) else None
+        probability = row[5] if metadata else row[4]
         if not _visible_probability(probability):
             continue
 
@@ -182,6 +353,7 @@ def format_scenario_statements(rows: list[list], scenario_type: str) -> list[lis
         statement = (
             f'{display_team} {verb} {str(target).lower()} '
             f'{_net_result_phrase(int(net_wins), other_teams, scenario_type)}.'
+            f'{_format_tiebreaker_sentence(team, metadata, scenario_type)}'
         )
         formatted_rows.append([statement, probability])
 
@@ -195,35 +367,52 @@ def format_bootyman_scenario_statements(rows: list[list]) -> list[list]:
         if len(row) < 6:
             continue
 
-        team, _, net_wins, other_teams, bootyman_type, probability = row[:6]
+        team, _, net_wins, other_teams, bootyman_type = row[:5]
+        metadata = row[5] if len(row) > 6 and isinstance(row[5], dict) else None
+        probability = row[6] if metadata else row[5]
         if not _visible_probability(probability):
             continue
 
         display_team = display_team_name(team)
+        other_team_count = len([
+            team_name
+            for team_name in str(other_teams).split(',')
+            if team_name.strip()
+        ])
         other_teams = _display_team_series(other_teams)
+        loss_phrase = 'a loss by' if other_team_count <= 1 else 'losses by'
+        win_phrase = 'a win by' if other_team_count <= 1 else 'wins by'
+        loses_verb = 'loses' if other_team_count <= 1 else 'lose'
+        wins_verb = 'wins' if other_team_count <= 1 else 'win'
 
         if bootyman_type == 'escape':
             verb = _team_verb(display_team, 'escapes', 'escape')
             if not other_teams:
-                condition = 'with a win' if int(net_wins) >= 1 else 'with this week\'s result'
+                condition = 'with a win' if int(net_wins) >= 1 else 'this week'
             elif int(net_wins) >= 1:
-                condition = f'with a win and a loss by {other_teams}'
+                condition = f'with a win plus {loss_phrase} {other_teams}'
             elif int(net_wins) == 0:
-                condition = f'with the same result or better than {other_teams}'
+                condition = f'by matching or better than {other_teams}'
             else:
-                condition = f'even with a loss if {other_teams} wins'
-            statement = f'{display_team} {verb} the Bootyman Bowl {condition}.'
+                condition = f'with a loss if {other_teams} {wins_verb}'
+            statement = (
+                f'{display_team} {verb} Bootyman Bowl {condition}.'
+                f'{_format_bootyman_tiebreaker_sentence(team, metadata, bootyman_type)}'
+            )
         else:
             verb = _team_verb(display_team, 'clinches', 'clinch')
             if not other_teams:
-                condition = 'with a loss' if int(net_wins) < 0 else 'with this week\'s result'
+                condition = 'with a loss' if int(net_wins) < 0 else 'this week'
             elif int(net_wins) >= 1:
-                condition = f'even with a win and a loss by {other_teams}'
+                condition = f'even with a win if {other_teams} {loses_verb}'
             elif int(net_wins) == 0:
-                condition = f'with the same result or worse than {other_teams}'
+                condition = f'by matching or worse than {other_teams}'
             else:
-                condition = f'with a loss and a win by {other_teams}'
-            statement = f'{display_team} {verb} a spot in the Bootyman Bowl {condition}.'
+                condition = f'with a loss plus {win_phrase} {other_teams}'
+            statement = (
+                f'{display_team} {verb} Bootyman Bowl {condition}.'
+                f'{_format_bootyman_tiebreaker_sentence(team, metadata, bootyman_type)}'
+            )
 
         formatted_rows.append([statement, probability])
 
