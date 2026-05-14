@@ -339,6 +339,8 @@ class Standings:
                     seed_wins = team_to_clear['overall_wins']
 
                     for wins in range(-1, 2):
+                        if seed == 3 and wins >= 0:
+                            continue
 
                         new_wb = (
                             (data_tm['overall_wins'] - seed_wins)
@@ -488,8 +490,18 @@ class Standings:
                         escape_over_teams,
                         scenario_type
                     ]
+                    tiebreaker = (
+                        self._final_week_bootyman_tiebreaker(
+                            team_name=team_name,
+                            other_team_names=escape_over_teams,
+                            scenario_type=scenario_type
+                        )
+                        if wins == 0 else None
+                    )
+                    if tiebreaker:
+                        row.append(tiebreaker)
 
-                    if row[-2] not in utils.flatten_list(rows):
+                    if row[3] not in utils.flatten_list(rows):
                         rows.append(row)
 
         if scenario_type == 'clinch':
@@ -516,11 +528,73 @@ class Standings:
                         clinch_with_teams,
                         scenario_type
                     ]
+                    tiebreaker = (
+                        self._final_week_bootyman_tiebreaker(
+                            team_name=team_name,
+                            other_team_names=clinch_with_teams,
+                            scenario_type=scenario_type
+                        )
+                        if wins == 0 else None
+                    )
+                    if tiebreaker:
+                        row.append(tiebreaker)
 
-                    if row[-2] not in utils.flatten_list(rows):
+                    if row[3] not in utils.flatten_list(rows):
                         rows.append(row)
 
         return rows
+
+    def _final_week_bootyman_tiebreaker(self,
+                                        team_name: str,
+                                        other_team_names: str,
+                                        scenario_type: str) -> dict | None:
+        if self.params.regular_season_end - self.week != 0:
+            return None
+
+        if not other_team_names:
+            return None
+
+        point_lookup = {
+            row.team: row.total_points
+            for row in self.standings_df.itertuples()
+        }
+        team_points = point_lookup.get(team_name)
+        if team_points is None:
+            return None
+
+        teams = [
+            team.strip()
+            for team in other_team_names.split(', ')
+            if team.strip()
+        ]
+        thresholds = []
+
+        for other_team in teams:
+            other_points = point_lookup.get(other_team)
+            if other_points is None:
+                continue
+
+            if team_points >= other_points:
+                thresholds.append({
+                    'team': other_team,
+                    'direction': 'other_needs',
+                    'points': round(team_points - other_points + 0.01, 2)
+                })
+            else:
+                thresholds.append({
+                    'team': other_team,
+                    'direction': 'team_needs',
+                    'points': round(other_points - team_points + 0.01, 2)
+                })
+
+        if not thresholds:
+            return None
+
+        return {
+            'type': 'final_week_bootyman_tiebreaker',
+            'scenario': scenario_type,
+            'thresholds': thresholds
+        }
 
     def get_matchup_results(self,
                             week: int,

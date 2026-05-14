@@ -21,6 +21,19 @@
   	opacity: 0.7;
 }
 
+.navbar-brand {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+}
+
+.navbar-bml-logo {
+    display: block;
+    height: 45px;
+    object-fit: contain;
+    width: auto;
+}
+
 
 .navbar-custom .navbar-nav > li > a:hover,
 .navbar-custom .navbar-nav > li > a:focus,
@@ -194,6 +207,25 @@ html {
 
 .home-summary-table tbody td.home-away-team-cell {
   border-left: 1px solid #dddddd;
+}
+
+.content-table.home-scenario-table {
+  margin: 10px auto;
+  white-space: normal;
+}
+
+.home-scenario-table th:first-child,
+.home-scenario-table td:first-child {
+  line-height: 1.35;
+  max-width: 775px;
+  min-width: 360px;
+  white-space: normal;
+}
+
+.home-scenario-table th:last-child,
+.home-scenario-table td:last-child {
+  white-space: nowrap;
+  width: 120px;
 }
 
 .winning-score {
