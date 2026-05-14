@@ -137,6 +137,16 @@ def _display_team_series(names: str) -> str:
     return f'{", ".join(teams[:-1])}, or {teams[-1]}'
 
 
+def _display_team_or_series(teams: list[str]) -> str:
+    display_teams = [display_team_name(team) for team in teams]
+
+    if len(display_teams) <= 1:
+        return display_teams[0] if display_teams else ''
+    if len(display_teams) == 2:
+        return ' or '.join(display_teams)
+    return f'{", ".join(display_teams[:-1])}, or {display_teams[-1]}'
+
+
 def _net_result_phrase(net_wins: int, other_teams: str, scenario_type: str) -> str:
     other_teams = _display_team_series(other_teams)
 
@@ -162,6 +172,84 @@ def _team_verb(team_name: str, singular: str, plural: str) -> str:
     return plural if team_name.endswith('s') else singular
 
 
+def _format_threshold_phrases(display_team: str,
+                              thresholds: list[dict],
+                              scenario_type: str) -> list[str]:
+    phrases = []
+
+    for threshold in thresholds:
+        other_team = display_team_name(threshold['team'])
+        points = f"{float(threshold['points']):.2f}"
+
+        if threshold['direction'] == 'other_needs':
+            if scenario_type == 'clinch':
+                phrase = (
+                    f'{other_team} must outscore {display_team} by at least '
+                    f'{points} points to pass them'
+                )
+            else:
+                phrase = (
+                    f'{other_team} must outscore {display_team} by at least '
+                    f'{points} points to keep them out'
+                )
+        else:
+            if scenario_type == 'clinch':
+                phrase = (
+                    f'{display_team} must outscore {other_team} by at least '
+                    f'{points} points to stay ahead'
+                )
+            else:
+                phrase = (
+                    f'{display_team} must outscore {other_team} by at least '
+                    f'{points} points to pass them'
+                )
+
+        phrases.append(phrase)
+
+    return phrases
+
+
+def _format_tiebreaker_sentence(team: str,
+                                metadata: dict | None,
+                                scenario_type: str) -> str:
+    if not metadata:
+        return ''
+
+    if metadata.get('type') != 'final_week_playoff_tiebreaker':
+        return ''
+
+    thresholds = metadata.get('thresholds', [])
+    if not thresholds:
+        return ''
+
+    display_team = display_team_name(team)
+    other_teams = _display_team_or_series([
+        threshold['team']
+        for threshold in thresholds
+    ])
+    phrases = _format_threshold_phrases(
+        display_team=display_team,
+        thresholds=thresholds,
+        scenario_type=scenario_type
+    )
+
+    if len(phrases) == 1:
+        threshold_text = phrases[0]
+    else:
+        threshold_text = '; '.join(phrases)
+
+    if scenario_type == 'clinch':
+        return (
+            f' If {display_team} loses and {other_teams} wins, '
+            f'{threshold_text}.'
+        )
+
+    return (
+        f' If {display_team} wins and {other_teams} loses, '
+        f'{threshold_text} to make the playoffs.'
+    )
+
+
 def format_scenario_statements(rows: list[list], scenario_type: str) -> list[list]:
     formatted_rows = []
 
@@ -169,7 +257,9 @@ def format_scenario_statements(rows: list[list], scenario_type: str) -> list[lis
         if len(row) < 5:
             continue
 
-        team, target, net_wins, other_teams, probability = row[:5]
+        team, target, net_wins, other_teams = row[:4]
+        metadata = row[4] if len(row) > 5 and isinstance(row[4], dict) else None
+        probability = row[5] if metadata else row[4]
         if not _visible_probability(probability):
             continue
 
@@ -182,6 +272,7 @@ def format_scenario_statements(rows: list[list], scenario_type: str) -> list[lis
         statement = (
             f'{display_team} {verb} {str(target).lower()} '
             f'{_net_result_phrase(int(net_wins), other_teams, scenario_type)}.'
+            f'{_format_tiebreaker_sentence(team, metadata, scenario_type)}'
         )
         formatted_rows.append([statement, probability])
 
