@@ -17,8 +17,13 @@ fa = FontAwesome(app)
 @app.route("/")
 def home():
     week_str = f'Week {params.current_week}'
-    headings_st = tuple(['Rk', 'Team', 'Overall', 'Division', 'Win%', 'Points', 'Bye GB', 'Playoff GB'])
-    data_st = ut.flask_get_data(standings_df[STANDINGS_COLUMNS_FLASK])
+    standings_columns = list(STANDINGS_COLUMNS_FLASK)
+    headings_st = ['Rk', 'Team', 'Overall', 'Division', 'Win%', 'Points', 'Bye GB', 'Playoff GB']
+    if show_bootyman_status:
+        standings_columns.append('bootyman_status')
+        headings_st.append('BMB GB')
+    headings_st = tuple(headings_st)
+    data_st = ut.flask_get_data(standings_df[standings_columns])
 
     data_prev = ut.flask_get_data(previous_week_results)
 
@@ -48,6 +53,7 @@ def home():
         previous_week_low_score=previous_week_low_score,
         last_week_bootyman=last_week_bootyman,
         is_playoff_week=is_playoff_week,
+        show_bootyman_status=show_bootyman_status,
         postseason_home=postseason_home
     )
 
@@ -159,6 +165,10 @@ def eff():
         eff_plot=eff_plot,
         efficiency_title=efficiency_title
     )
+
+@app.route("/efficiency/<path:filename>")
+def efficiency_image(filename):
+    return send_from_directory("efficiency", filename)
 
 @app.route("/champions/")
 def champs():

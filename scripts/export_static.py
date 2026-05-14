@@ -31,6 +31,7 @@ def _rewrite_links(html: str, output_file: Path) -> str:
     # Rewrite root-relative assets for GitHub Pages subfolders
     html = re.sub(r'((?:href|src)=["\'])/static/', rf'\1{prefix}static/', html)
     html = re.sub(r'((?:href|src)=["\'])/logos/', rf'\1{prefix}logos/', html)
+    html = re.sub(r'((?:href|src)=["\'])/efficiency/', rf'\1{prefix}efficiency/', html)
 
     # Rewrite root-relative route links
     for route, target in ROUTES.items():
@@ -77,6 +78,8 @@ def export_static(output_dir: Path, clean: bool = True) -> None:
 
     shutil.copytree("static", output_dir / "static", dirs_exist_ok=True)
     shutil.copytree("logos", output_dir / "logos", dirs_exist_ok=True)
+    if Path("efficiency").exists():
+        shutil.copytree("efficiency", output_dir / "efficiency", dirs_exist_ok=True)
 
 
 def main() -> None:

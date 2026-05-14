@@ -685,6 +685,47 @@ standings_df['playoff_status'] = standings_df.apply(
     axis=1
 )
 
+bootyman_order = league_rules.order_bootyman_standings(
+    records=standings_df.rename(
+        columns={
+            'overall_wins': 'wins',
+            'total_points': 'score'
+        }
+    ).to_dict(orient='records'),
+    wins_key='wins',
+    points_key='score'
+)
+bootyman_boundary_wins = bootyman_order[1]['wins'] if len(bootyman_order) > 1 else 0
+bootyman_clinch_boundary_wins = bootyman_order[2]['wins'] if len(bootyman_order) > 2 else 0
+escaped_bootyman_teams = {
+    row['team']
+    for row in bootyman_order
+    if row['wins'] - bootyman_boundary_wins > params.weeks_left
+}
+clinched_bootyman_teams = {
+    row['team']
+    for row in bootyman_order
+    if bootyman_clinch_boundary_wins - row['wins'] > params.weeks_left
+}
+show_bootyman_status = bool(escaped_bootyman_teams)
+
+
+def _format_bootyman_status(row: pd.Series) -> str:
+    if row.team in escaped_bootyman_teams:
+        return 'e'
+    if row.team in clinched_bootyman_teams:
+        return 'c'
+
+    games_ahead = row.overall_wins - bootyman_boundary_wins
+    return Standings._format_weeks_back(games_ahead)
+
+
+if show_bootyman_status:
+    standings_df['bootyman_status'] = standings_df.apply(
+        _format_bootyman_status,
+        axis=1
+    )
+
 def format_prob(p):
     if 0 < p <= 0.001:
         return "<0.1%"

@@ -500,7 +500,11 @@ html {
   background-color: rgba(13, 22, 65, 0.11);
 }
 
-.standings tbody tr:nth-child(5){
+.standings tbody tr.bye-cutoff {
+  border-bottom: 3px dashed #606060;
+}
+
+.standings tbody tr.playoff-cutoff {
   border-bottom: 3px solid #606060;
 }
 /* end format standings */
