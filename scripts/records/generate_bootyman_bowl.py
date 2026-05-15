@@ -14,6 +14,7 @@ from scripts.utils import constants
 class BootymanConfig:
     weeks: tuple[int, ...]
     regular_season_end: int
+    require_head_to_head: bool = True
 
 
 BOOTYMAN_CONFIGS = {
@@ -24,7 +25,11 @@ BOOTYMAN_CONFIGS.update({
     season: BootymanConfig(weeks=(14, 15), regular_season_end=13)
     for season in range(2021, 2025)
 })
-BOOTYMAN_CONFIGS[2025] = BootymanConfig(weeks=(15,), regular_season_end=14)
+BOOTYMAN_CONFIGS[2025] = BootymanConfig(
+    weeks=(15,),
+    regular_season_end=14,
+    require_head_to_head=False
+)
 
 
 def _team_name_lookup(data: dict[str, Any]) -> dict[int, str]:
@@ -96,22 +101,70 @@ def _bootyman_teams(schedule: list[dict[str, Any]],
 
 def _bootyman_scores(schedule: list[dict[str, Any]],
                      bootyman_teams: list[int],
-                     weeks: tuple[int, ...]) -> dict[int, float]:
+                     weeks: tuple[int, ...],
+                     require_head_to_head: bool = True) -> tuple[dict[int, float], list[dict[str, Any]]]:
     scores = {team_id: 0.0 for team_id in bootyman_teams}
+    matchup_rows = []
+    bootyman_team_set = set(bootyman_teams)
 
     for matchup in schedule:
         if matchup.get('matchupPeriodId') not in weeks:
             continue
 
-        for team_id, score in _iter_matchup_teams(matchup):
+        matchup_scores = {
+            team_id: score
+            for team_id, score in _iter_matchup_teams(matchup)
+            if team_id in scores
+        }
+        if not matchup_scores:
+            continue
+        if require_head_to_head and set(matchup_scores) != bootyman_team_set:
+            continue
+
+        for team_id, score in matchup_scores.items():
             if team_id in scores:
                 scores[team_id] += score
 
-    return scores
+        matchup_rows.append({
+            'week': matchup.get('matchupPeriodId'),
+            'scores': matchup_scores,
+        })
+
+    return scores, matchup_rows
 
 
 def _format_score(score: float) -> str:
     return f'{score:.2f}'.rstrip('0').rstrip('.')
+
+
+def _format_result(row: dict[str, str]) -> str:
+    return (
+        f"{row['Season']}: {row['Team']} "
+        f"({_format_score(float(row['Score']))}) def. "
+        f"{row['Runner Up']} ({_format_score(float(row['Runner Up Score']))}) "
+        f"in week(s) {row['Weeks']}"
+    )
+
+
+def _print_matchup_rows(matchup_rows: list[dict[str, Any]],
+                        team_names: dict[int, str],
+                        require_head_to_head: bool) -> None:
+    if not require_head_to_head:
+        rows_by_week = {}
+        for matchup in matchup_rows:
+            week_scores = rows_by_week.setdefault(matchup['week'], {})
+            week_scores.update(matchup['scores'])
+        matchup_rows = [
+            {'week': week, 'scores': scores}
+            for week, scores in sorted(rows_by_week.items())
+        ]
+
+    for matchup in matchup_rows:
+        scores = ' vs. '.join(
+            f'{team_names[team_id]} {_format_score(score)}'
+            for team_id, score in matchup['scores'].items()
+        )
+        print(f"  Week {matchup['week']}: {scores}")
 
 
 def generate_rows(start_season: int,
@@ -128,10 +181,11 @@ def generate_rows(start_season: int,
             schedule=schedule,
             regular_season_end=config.regular_season_end
         )
-        scores = _bootyman_scores(
+        scores, matchup_rows = _bootyman_scores(
             schedule=schedule,
             bootyman_teams=bootyman_teams,
-            weeks=config.weeks
+            weeks=config.weeks,
+            require_head_to_head=config.require_head_to_head
         )
 
         if len([score for score in scores.values() if score > 0]) != 2:
@@ -153,14 +207,21 @@ def generate_rows(start_season: int,
         winner_id, winner_score = ordered[0]
         runner_up_id, runner_up_score = ordered[1]
 
-        rows.append({
+        row = {
             'Season': str(season),
             'Team': team_names[winner_id],
             'Runner Up': team_names[runner_up_id],
             'Score': _format_score(winner_score),
             'Runner Up Score': _format_score(runner_up_score),
             'Weeks': ','.join(str(week) for week in config.weeks),
-        })
+        }
+        print(_format_result(row))
+        _print_matchup_rows(
+            matchup_rows=matchup_rows,
+            team_names=team_names,
+            require_head_to_head=config.require_head_to_head
+        )
+        rows.append(row)
 
     return rows
 
