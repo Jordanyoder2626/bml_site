@@ -140,7 +140,7 @@ def _format_score(score: float) -> str:
 def _format_result(row: dict[str, str]) -> str:
     return (
         f"{row['Season']}: {row['Team']} "
-        f"({_format_score(float(row['Score']))}) def. "
+        f"({_format_score(float(row['Score']))}) lost to "
         f"{row['Runner Up']} ({_format_score(float(row['Runner Up Score']))}) "
         f"in week(s) {row['Weeks']}"
     )
@@ -169,7 +169,7 @@ def _print_matchup_rows(matchup_rows: list[dict[str, Any]],
 
 def generate_rows(start_season: int,
                   end_season: int,
-                  winner_is_low_score: bool = False) -> list[dict[str, str]]:
+                  listed_team_is_low_score: bool = True) -> list[dict[str, str]]:
     rows = []
 
     for season in range(start_season, end_season + 1):
@@ -202,16 +202,16 @@ def generate_rows(start_season: int,
         ordered = sorted(
             scores.items(),
             key=lambda item: item[1],
-            reverse=not winner_is_low_score
+            reverse=not listed_team_is_low_score
         )
-        winner_id, winner_score = ordered[0]
+        listed_team_id, listed_team_score = ordered[0]
         runner_up_id, runner_up_score = ordered[1]
 
         row = {
             'Season': str(season),
-            'Team': team_names[winner_id],
+            'Team': team_names[listed_team_id],
             'Runner Up': team_names[runner_up_id],
-            'Score': _format_score(winner_score),
+            'Score': _format_score(listed_team_score),
             'Runner Up Score': _format_score(runner_up_score),
             'Weeks': ','.join(str(week) for week in config.weeks),
         }
@@ -240,7 +240,12 @@ def main() -> None:
     parser.add_argument(
         '--low-score-wins',
         action='store_true',
-        help='Treat the lower Bootyman Bowl score as the listed winner.',
+        help='Treat the lower Bootyman Bowl score as the listed team. This is the default.',
+    )
+    parser.add_argument(
+        '--high-score-wins',
+        action='store_true',
+        help='Treat the higher Bootyman Bowl score as the listed team.',
     )
     parser.add_argument(
         '--include-scores',
@@ -252,7 +257,7 @@ def main() -> None:
     rows = generate_rows(
         start_season=args.start_season,
         end_season=args.end_season,
-        winner_is_low_score=args.low_score_wins
+        listed_team_is_low_score=not args.high_score_wins
     )
 
     output = Path(args.output)
