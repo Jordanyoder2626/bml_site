@@ -1,4 +1,4 @@
-# [Link to report](https://www.thechillff.com/)
+# [Link to report](https://jordanyoder2626.github.io/bml_site/)
 
 League report for my personal Fantasy Football league, created using Python and Flask. Includes a power ranking, simulation results, what-if record scenarios, and team efficiency charts
 
