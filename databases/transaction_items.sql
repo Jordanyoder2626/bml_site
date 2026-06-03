@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS transaction_items (
+    id VARCHAR(128) PRIMARY KEY,
+    transaction_id VARCHAR(64) NOT NULL,
+    related_transaction_id VARCHAR(64),
+    season INT NOT NULL,
+    week INT NOT NULL,
+    transaction_type VARCHAR(32) NOT NULL,
+    status VARCHAR(32),
+    item_type VARCHAR(32) NOT NULL,
+    player_id INT NOT NULL,
+    from_team_id INT,
+    to_team_id INT,
+    from_lineup_slot_id INT,
+    to_lineup_slot_id INT,
+    is_keeper BOOLEAN,
+    overall_pick_number INT,
+    created TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_transaction_items_transaction (transaction_id),
+    INDEX idx_transaction_items_player (season, player_id),
+    INDEX idx_transaction_items_adds (season, item_type, to_team_id),
+    INDEX idx_transaction_items_drops (season, item_type, from_team_id),
+    INDEX idx_transaction_items_related (related_transaction_id)
+);

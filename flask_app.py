@@ -3,12 +3,21 @@ from flask_fontawesome import FontAwesome
 
 import scripts.utils.utils as ut
 from data_prep import *
+from scripts.records.transaction_records import (
+    pickup_ppg_records,
+    trade_vault_records,
+    transaction_counter_records,
+)
 from scripts.utils.constants import STANDINGS_COLUMNS_FLASK, RECORDS_COLUMNS_FLASK, ALLTIME_COLUMNS_FLASK
 
 
 # create flask app
 app = Flask(__name__)
 fa = FontAwesome(app)
+transaction_vault_cache = None
+trade_vault_cache = None
+transaction_vault_page_cache = None
+transaction_counter_cache = None
 
 ###########################
 # Flask routes
@@ -209,6 +218,92 @@ def records():
                            headings_alltime=headings_alltime, data_alltime=data_alltime,
                            headings_matchups=headings_matchups, data_matchups=data_matchups,
                            headings_rec=headings_rec, data_rec=data_rec)
+
+@app.route("/transaction-vault/")
+def transaction_vault():
+    global transaction_vault_cache
+    global trade_vault_cache
+    global transaction_vault_page_cache
+    global transaction_counter_cache
+    if transaction_vault_page_cache is not None:
+        return render_template("transaction_vault.html", **transaction_vault_page_cache)
+
+    if transaction_vault_cache is None:
+        transaction_vault_cache = pickup_ppg_records(top_n=None)
+    if trade_vault_cache is None:
+        trade_vault_cache = trade_vault_records()
+    if transaction_counter_cache is None:
+        transaction_counter_cache = transaction_counter_records()
+
+    pickup_records = transaction_vault_cache
+    trade_records = trade_vault_cache
+    transaction_counter = transaction_counter_cache
+    headings = tuple(['Rank', 'Season', 'Player Name', 'Week Picked Up', 'PPG After Pickup', 'Team'])
+    headings_counter = tuple(transaction_counter.columns)
+    data_counter = ut.flask_get_data(transaction_counter)
+
+    if pickup_records.empty:
+        data_qb = tuple()
+        data_non_qb = tuple()
+    else:
+        display_cols = ['rank', 'season', 'player_name', 'pickup_week', 'ppg', 'display_name']
+        pickup_records = pickup_records.copy()
+        pickup_records['ppg'] = pickup_records['ppg'].map('{:.2f}'.format)
+
+        qb_records = pickup_records[pickup_records['position'] == 'QB'].head(15).copy()
+        non_qb_records = pickup_records[
+            ~pickup_records['position'].isin(['QB', 'K', 'DST'])
+        ].head(25).copy()
+
+        qb_records['rank'] = range(1, len(qb_records) + 1)
+        non_qb_records['rank'] = range(1, len(non_qb_records) + 1)
+
+        data_qb = ut.flask_get_data(qb_records[display_cols])
+        data_non_qb = ut.flask_get_data(non_qb_records[display_cols])
+
+    headings_trades = tuple(['Trade', 'Season', 'Week', 'Team 1 Received', 'Team 1 PPG Change', 'Team 2 Received', 'Team 2 PPG Change'])
+    trade_cols = ['trade_order', 'season', 'week', 'team_1_received_display', 'team_1_ppg_change', 'team_2_received_display', 'team_2_ppg_change']
+    trade_tables = {}
+    for key in ['lopsided', 'even', 'mutual_benefit', 'mutual_destruction']:
+        table = trade_records.get(key)
+        if table is None or table.empty:
+            trade_tables[key] = tuple()
+            continue
+
+        table = table.copy()
+        table['team_1_received_display'] = table.apply(
+            lambda row: f"{row['team_1']} received:<br>{str(row['team_1_received']).replace(', ', '<br>')}",
+            axis=1,
+        )
+        table['team_2_received_display'] = table.apply(
+            lambda row: f"{row['team_2']} received:<br>{str(row['team_2_received']).replace(', ', '<br>')}",
+            axis=1,
+        )
+        table['team_1_ppg_change'] = table.apply(
+            lambda row: f"{row['team_1_before_ppg']:.2f} -> {row['team_1_after_ppg']:.2f}<br>({row['team_1_ppg_delta']:+.2f})",
+            axis=1,
+        )
+        table['team_2_ppg_change'] = table.apply(
+            lambda row: f"{row['team_2_before_ppg']:.2f} -> {row['team_2_after_ppg']:.2f}<br>({row['team_2_ppg_delta']:+.2f})",
+            axis=1,
+        )
+        trade_tables[key] = ut.flask_get_data(table[trade_cols])
+
+    transaction_vault_page_cache = {
+        "headings_qb": headings,
+        "data_qb": data_qb,
+        "headings_non_qb": headings,
+        "data_non_qb": data_non_qb,
+        "headings_trades": headings_trades,
+        "data_lopsided": trade_tables['lopsided'],
+        "data_even": trade_tables['even'],
+        "data_mutual_benefit": trade_tables['mutual_benefit'],
+        "data_mutual_destruction": trade_tables['mutual_destruction'],
+        "headings_counter": headings_counter,
+        "data_counter": data_counter,
+    }
+
+    return render_template("transaction_vault.html", **transaction_vault_page_cache)
 
 # Run app
 if __name__ == "__main__":

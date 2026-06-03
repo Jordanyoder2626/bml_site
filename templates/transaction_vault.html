@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<br>
+<style>
+h1 {text-align: center;}
+h3 {text-align: center;}
+p {text-align: center;}
+
+table.center {
+  margin-left: auto;
+  margin-right: auto;
+  vertical-align: middle;
+}
+</style>
+
+<h1>Transaction Counter</h1>
+<div class="tscroll" style="overflow-x:auto;">
+    <table class="table table-hover center content-table" style="table-layout:auto; width:40%; white-space:nowrap;">
+        <thead>
+            <tr>
+                {% for header in headings_counter %}
+                    <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in data_counter %}
+            <tr>
+                {% for cell in row %}
+                    <td>{{ cell }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<br>
+<h1>Waiver Heroes</h1>
+<p>Waiver and free-agent pickups ranked by post-pickup points per game</p>
+
+<br>
+<h3>Top QB Pickups</h3>
+<div class="tscroll" style="overflow-x:auto;">
+    <table class="table table-hover center content-table" style="table-layout:auto; width:60%; white-space:nowrap;">
+        <thead>
+            <tr>
+                {% for header in headings_qb %}
+                    <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in data_qb %}
+            <tr>
+                {% for cell in row %}
+                    <td>{{ cell }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<br>
+<h3>Top Non-QB Pickups</h3>
+<div class="tscroll" style="overflow-x:auto;">
+    <table class="table table-hover center content-table" style="table-layout:auto; width:60%; white-space:nowrap;">
+        <thead>
+            <tr>
+                {% for header in headings_non_qb %}
+                    <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in data_non_qb %}
+            <tr>
+                {% for cell in row %}
+                    <td>{{ cell }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<br>
+<h1>Trade Vault</h1>
+<p>Trades ranked by team points per game before and after the deal</p>
+
+<h3>Most Lopsided Trades</h3>
+<div class="tscroll" style="overflow-x:auto;">
+    <table class="table table-hover center content-table" style="table-layout:auto; width:85%; white-space:nowrap;">
+        <thead>
+            <tr>
+                {% for header in headings_trades %}
+                    <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in data_lopsided %}
+            <tr>
+                {% for cell in row %}
+                    <td>{{ cell|safe }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<br>
+<h3>Most Even Trades</h3>
+<div class="tscroll" style="overflow-x:auto;">
+    <table class="table table-hover center content-table" style="table-layout:auto; width:85%; white-space:nowrap;">
+        <thead>
+            <tr>
+                {% for header in headings_trades %}
+                    <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in data_even %}
+            <tr>
+                {% for cell in row %}
+                    <td>{{ cell|safe }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<br>
+<h3>Most Mutually Beneficial Trades</h3>
+<div class="tscroll" style="overflow-x:auto;">
+    <table class="table table-hover center content-table" style="table-layout:auto; width:85%; white-space:nowrap;">
+        <thead>
+            <tr>
+                {% for header in headings_trades %}
+                    <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in data_mutual_benefit %}
+            <tr>
+                {% for cell in row %}
+                    <td>{{ cell|safe }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<br>
+<h3>Most Mutually Destructive Trades</h3>
+<div class="tscroll" style="overflow-x:auto;">
+    <table class="table table-hover center content-table" style="table-layout:auto; width:85%; white-space:nowrap;">
+        <thead>
+            <tr>
+                {% for header in headings_trades %}
+                    <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in data_mutual_destruction %}
+            <tr>
+                {% for cell in row %}
+                    <td>{{ cell|safe }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

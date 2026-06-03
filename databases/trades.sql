@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS trades (
+    trade_id VARCHAR(64) PRIMARY KEY,
+    related_transaction_id VARCHAR(64) NOT NULL,
+    season INT NOT NULL,
+    week INT NOT NULL,
+    accepted_transaction_id VARCHAR(64) NOT NULL,
+    proposal_transaction_id VARCHAR(64),
+    uphold_transaction_id VARCHAR(64),
+    team_1_id INT NOT NULL,
+    team_2_id INT NOT NULL,
+    proposed_date BIGINT,
+    accepted_date BIGINT,
+    process_date BIGINT,
+    raw_json JSON,
+    created TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_trades_season_week (season, week),
+    INDEX idx_trades_related (related_transaction_id),
+    INDEX idx_trades_team_1 (season, team_1_id),
+    INDEX idx_trades_team_2 (season, team_2_id)
+);
