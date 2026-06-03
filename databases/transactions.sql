@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS transactions (
+    transaction_id VARCHAR(64) PRIMARY KEY,
+    related_transaction_id VARCHAR(64),
+    season INT NOT NULL,
+    week INT NOT NULL,
+    transaction_type VARCHAR(32) NOT NULL,
+    status VARCHAR(32),
+    execution_type VARCHAR(32),
+    team_id INT,
+    member_id VARCHAR(255),
+    bid_amount DECIMAL(8, 2) DEFAULT 0,
+    proposed_date BIGINT,
+    accepted_date BIGINT,
+    process_date BIGINT,
+    expiration_date BIGINT,
+    is_pending BOOLEAN,
+    raw_json JSON,
+    created TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_transactions_season_week (season, week),
+    INDEX idx_transactions_type_status (transaction_type, status),
+    INDEX idx_transactions_related (related_transaction_id),
+    INDEX idx_transactions_team (season, team_id)
+);

@@ -15,6 +15,7 @@ ROUTES = {
     "/champions/": "champions/index.html",
     "/bootymen/": "bootymen/index.html",
     "/records/": "records/index.html",
+    "/transaction-vault/": "transaction-vault/index.html",
 }
 
 
