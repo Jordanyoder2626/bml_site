@@ -30,6 +30,10 @@ FANTASY_TEAMS_COLS = [
     "team_name",
     "abbrev",
     "active",
+    "transaction_losses",
+    "transaction_trades",
+    "transaction_acquisitions",
+    "transaction_drops",
 ]
 
 LEAGUE_SEASONS_COLS = [
@@ -156,6 +160,22 @@ def create_tables(cursor):
     database_dir = Path(__file__).resolve().parents[1]
     for schema_file in SCHEMA_FILES:
         cursor.execute((database_dir / schema_file).read_text())
+    ensure_schema_migrations(cursor)
+
+
+def add_column_if_missing(cursor, table, column, definition):
+    try:
+        cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition};")
+    except Exception as exc:
+        if "Duplicate column" not in str(exc):
+            raise
+
+
+def ensure_schema_migrations(cursor):
+    add_column_if_missing(cursor, "fantasy_teams", "transaction_losses", "INT DEFAULT 0")
+    add_column_if_missing(cursor, "fantasy_teams", "transaction_trades", "INT DEFAULT 0")
+    add_column_if_missing(cursor, "fantasy_teams", "transaction_acquisitions", "INT DEFAULT 0")
+    add_column_if_missing(cursor, "fantasy_teams", "transaction_drops", "INT DEFAULT 0")
 
 
 def get_status(loader):
@@ -201,6 +221,7 @@ def collect_fantasy_team_rows(season, teams_payload):
         owner_id = team.get("primaryOwner", "")
         names = owner_names(owner_id)
         team_id = team.get("id")
+        transaction_counter = team.get("transactionCounter", {})
         rows.append(
             {
                 "id": f"{season}_{team_id}",
@@ -211,6 +232,10 @@ def collect_fantasy_team_rows(season, teams_payload):
                 "team_name": names["team_name"] or team.get("location", ""),
                 "abbrev": team.get("abbrev", ""),
                 "active": names["active"],
+                "transaction_losses": transaction_counter.get("losses", 0),
+                "transaction_trades": transaction_counter.get("trades", 0),
+                "transaction_acquisitions": transaction_counter.get("acquisitions", 0),
+                "transaction_drops": transaction_counter.get("drops", 0),
             }
         )
     return rows

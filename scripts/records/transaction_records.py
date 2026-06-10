@@ -481,62 +481,39 @@ def trade_vault_records() -> dict[str, pd.DataFrame]:
 
 
 def transaction_counter_records() -> pd.DataFrame:
-    items = _clean_numeric(
-        _read_table("transaction_items"),
-        ["season", "from_team_id", "to_team_id"],
-    )
-    trades = _clean_numeric(_read_table("trades"), ["season", "team_1_id", "team_2_id"])
-    teams = _clean_numeric(_read_table("fantasy_teams"), ["season", "team_id"])
-
-    executed_items = items[items["status"] == "EXECUTED"].copy()
-    team_names = teams[["season", "team_id", "display_name"]].drop_duplicates()
-
-    adds = (
-        executed_items[executed_items["item_type"] == "ADD"]
-        .groupby(["season", "to_team_id"])
-        .size()
-        .reset_index(name="Adds")
-        .rename(columns={"to_team_id": "team_id"})
-    )
-    drops = (
-        executed_items[executed_items["item_type"] == "DROP"]
-        .groupby(["season", "from_team_id"])
-        .size()
-        .reset_index(name="Drops")
-        .rename(columns={"from_team_id": "team_id"})
-    )
-    trade_sides = pd.concat(
+    teams = _clean_numeric(
+        _read_table("fantasy_teams"),
         [
-            trades[["season", "team_1_id"]].rename(columns={"team_1_id": "team_id"}),
-            trades[["season", "team_2_id"]].rename(columns={"team_2_id": "team_id"}),
+            "transaction_trades",
+            "transaction_acquisitions",
+            "transaction_drops",
         ],
-        ignore_index=True,
     )
-    trade_counts = (
-        trade_sides
-        .groupby(["season", "team_id"])
-        .size()
-        .reset_index(name="Trades")
-    )
-
     counter = (
-        team_names
-        .merge(adds, on=["season", "team_id"], how="left")
-        .merge(drops, on=["season", "team_id"], how="left")
-        .merge(trade_counts, on=["season", "team_id"], how="left")
-    )
-    counter[["Adds", "Drops", "Trades"]] = counter[["Adds", "Drops", "Trades"]].fillna(0).astype(int)
-    counter = (
-        counter
-        .groupby("display_name", as_index=False)[["Adds", "Drops", "Trades"]]
+        teams
+        .groupby("display_name", as_index=False)[
+            [
+                "transaction_trades",
+                "transaction_acquisitions",
+                "transaction_drops",
+            ]
+        ]
         .sum()
-        .rename(columns={"display_name": "Manager"})
+        .rename(
+            columns={
+                "display_name": "Manager",
+                "transaction_trades": "Trades",
+                "transaction_acquisitions": "Acq",
+                "transaction_drops": "Drop",
+            }
+        )
     )
-    counter["Total"] = counter["Adds"] + counter["Drops"] + counter["Trades"]
+    counter[["Trades", "Acq", "Drop"]] = counter[["Trades", "Acq", "Drop"]].fillna(0).astype(int)
+    counter["Total"] = counter["Trades"] + counter["Acq"] + counter["Drop"]
 
     return (
-        counter[["Manager", "Adds", "Drops", "Trades", "Total"]]
-        .sort_values(["Total", "Adds", "Drops", "Trades"], ascending=False)
+        counter[["Manager", "Trades", "Acq", "Drop", "Total"]]
+        .sort_values(["Total", "Acq", "Drop", "Trades"], ascending=False)
         .reset_index(drop=True)
     )
 
