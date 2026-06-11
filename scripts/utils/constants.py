@@ -48,7 +48,7 @@ ALLTIME_STANDINGS_COLUMNS = 'id, team, seasons, playoffs, overall_rec, win_perc,
 
 STANDINGS_COLUMNS_FLASK = ['seed', 'team', 'overall', 'division', 'win_perc', 'total_points_disp', 'wb2_disp', 'wb5_disp']
 RECORDS_COLUMNS_FLASK = ['category', 'record', 'holder', 'season', 'week']
-ALLTIME_COLUMNS_FLASK = ['team', 'seasons', 'playoffs', 'overall_rec', 'win_perc', 'matchup_rec', 'tophalf_rec', 'points']
+ALLTIME_COLUMNS_FLASK = ['team', 'seasons', 'playoffs', 'overall_rec', 'win_perc', 'tophalf_rec', 'points']
 
 
 # Gamma distribution values for simulations

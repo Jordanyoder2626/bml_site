@@ -205,7 +205,7 @@ def bootymen():
 
 @app.route("/records/")
 def records():
-    headings_alltime = tuple(['Team', 'Seasons', 'Playoffs', 'Overall', 'Win%', 'Matchup', 'Top Half', 'Points'])
+    headings_alltime = tuple(['Team', 'Seasons', 'Playoffs', 'Overall', 'Win%', 'Top Half', 'Points'])
     data_alltime = ut.flask_get_data(alltime_df[ALLTIME_COLUMNS_FLASK])
 
     headings_matchups = tuple(alltime_matchups_df.columns)
