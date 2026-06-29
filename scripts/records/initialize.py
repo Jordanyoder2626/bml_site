@@ -72,6 +72,13 @@ def _season_record_rows(df, category, record_col, holder_col='team'):
     return row
 
 
+def _playoff_team_count(data, season):
+    try:
+        return int(data.settings()['settings']['scheduleSettings']['playoffTeamCount'])
+    except Exception:
+        return 5 if season >= 2025 else 4
+
+
 # ============================================================
 # ALL TIME STANDINGS
 # ============================================================
@@ -142,7 +149,7 @@ def get_all_time_standings(last_season):
         data = DataLoader(year=season)
         teams = Teams(data=data)
 
-        playoff_cutoff = 5
+        playoff_cutoff = _playoff_team_count(data, season)
 
         team_data = data.teams()
 
