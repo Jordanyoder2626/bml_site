@@ -57,7 +57,7 @@ def main():
 
     print(
         "season,team_id,primary_owner,constant_display,constant_team_name,"
-        "constant_active,espn_location,espn_nickname,espn_abbrev"
+        "constant_active,espn_name,espn_location,espn_nickname,espn_abbrev"
     )
 
     for season in range(args.start_season, args.end_season + 1):
@@ -80,6 +80,7 @@ def main():
                         display,
                         team_name,
                         "" if active is None else str(active),
+                        str(team.get("name", "")),
                         str(team.get("location", "")),
                         str(team.get("nickname", "")),
                         str(team.get("abbrev", "")),

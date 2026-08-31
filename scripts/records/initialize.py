@@ -41,7 +41,36 @@ def _get_matchups_db():
     matchups['season'] = matchups['season'].astype(int)
     matchups['week'] = matchups['week'].astype(int)
 
+    # ESPN exposes future matchup rows with zero scores. Those rows are useful
+    # for schedules, but they are not completed games and must not affect
+    # all-time standings or records.
+    if 'opponent_score' in matchups:
+        matchups = matchups[
+            (matchups['score'] > 0) | (matchups['opponent_score'] > 0)
+        ].copy()
+
     return matchups.sort_values(['season', 'team', 'week']).reset_index(drop=True)
+
+
+def _regular_season_end(season):
+    if season <= 2020:
+        return 12
+    if season <= 2024:
+        return 13
+    return 14
+
+
+def _completed_season_matchups(matchups):
+    """Return rows only from seasons with a completed regular season."""
+    if matchups.empty:
+        return matchups
+
+    completed_seasons = [
+        season
+        for season, rows in matchups.groupby('season')
+        if rows['week'].max() >= _regular_season_end(int(season))
+    ]
+    return matchups[matchups['season'].isin(completed_seasons)].copy()
 
 
 def _join_values(series):
@@ -85,7 +114,11 @@ def _playoff_team_count(data, season):
 
 def get_all_time_standings(last_season):
 
-    table = Database(table='matchups').retrieve_data(how='all')
+    table = _get_matchups_db()
+    table = table[table.season <= last_season].copy()
+    completed_seasons = sorted(
+        _completed_season_matchups(table)['season'].unique().tolist()
+    )
 
     table = table.groupby('team').aggregate({
         'score': 'sum',
@@ -144,7 +177,7 @@ def get_all_time_standings(last_season):
 
     team_name, lg_season, playoffs = [], [], []
 
-    for season in range(2018, last_season + 1):
+    for season in completed_seasons:
 
         data = DataLoader(year=season)
         teams = Teams(data=data)
@@ -282,8 +315,21 @@ def get_standings_records(last_season):
 
     most_m_wins = df[df.m_wins == df.m_wins.max()]
     most_m_losses = df[df.m_losses == df.m_losses.max()]
-    most_ppg = df[df.ppg == df.ppg.max()]
-    least_ppg = df[df.ppg == df.ppg.min()]
+    completed_matchups = _completed_season_matchups(matchups)
+    completed_df = (
+        completed_matchups
+        .groupby(['season', 'team'], as_index=False)
+        .agg(
+            total_points=('score', 'sum'),
+            games=('score', 'count'),
+            week=('week', 'max')
+        )
+    )
+    completed_df['ppg'] = (
+        completed_df['total_points'] / completed_df['games']
+    ).round(2)
+    most_ppg = completed_df[completed_df.ppg == completed_df.ppg.max()]
+    least_ppg = completed_df[completed_df.ppg == completed_df.ppg.min()]
 
     return pd.DataFrame([
         _season_record_rows(most_m_wins, 'Most Wins', 'm_wins'),

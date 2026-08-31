@@ -28,8 +28,8 @@ N_SIMS = 100_000
 _CURRENT_YEAR = dt.datetime.now().year
 _CURRENT_MONTH = dt.datetime.now().month
 # SEASON = _CURRENT_YEAR if _CURRENT_MONTH >= 9 else _CURRENT_YEAR-1
-SEASON = 2025
-CURRENT_WEEK = 15
+SEASON = 2026
+CURRENT_WEEK = 1
 LEAGUE_ID = os.getenv('LEAGUE_ID')
 SWID = os.getenv('SWID')
 ESPN_S2 = os.getenv('ESPN_S2')
@@ -48,7 +48,7 @@ ALLTIME_STANDINGS_COLUMNS = 'id, team, seasons, playoffs, overall_rec, win_perc,
 
 STANDINGS_COLUMNS_FLASK = ['seed', 'team', 'overall', 'division', 'win_perc', 'total_points_disp', 'wb2_disp', 'wb5_disp']
 RECORDS_COLUMNS_FLASK = ['category', 'record', 'holder', 'season', 'week']
-ALLTIME_COLUMNS_FLASK = ['team', 'seasons', 'playoffs', 'overall_rec', 'win_perc', 'tophalf_rec', 'points']
+ALLTIME_COLUMNS_FLASK = ['team', 'seasons', 'playoffs', 'overall_rec', 'win_perc', 'points']
 
 
 # Gamma distribution values for simulations
@@ -364,7 +364,7 @@ TEAM_IDS = {
             'first': 'Tripp',
             'last': 'Winniford',
             'display': 'Tripp',
-            'team_name': 'Riceism'
+            'team_name': 'Massah Maye'
         }
     },
     '{0D5E54B1-D7A2-4E3C-9E54-B1D7A26E3C78}': {
@@ -382,7 +382,7 @@ TEAM_IDS = {
             'first': 'Chase',
             'last': 'Yoder',
             'display': 'Chase',
-            'team_name': 'Moose Knuckle'
+            'team_name': 'Strib Club'
         }
     },
     '{3E97B7E5-216F-42BC-9E34-E3DC4E002930}': {
@@ -400,7 +400,7 @@ TEAM_IDS = {
             'first': 'thomas',
             'last': 'mccartney',
             'display': 'Rendle',
-            'team_name': 'Gruden\'s Grinders'
+            'team_name': 'Grudens Grinders'
         }
     },
     '{81B6CF9E-2070-4C7D-A481-4399C5DFD344}': {
@@ -409,7 +409,7 @@ TEAM_IDS = {
             'first': 'Cade',
             'last': 'Smitherman',
             'display': 'Cade',
-            'team_name': 'Bijario'
+            'team_name': "C'dario"
         }
     },
     '{D62C1EF4-D8C6-4017-AC1E-F4D8C650177B}': {
@@ -427,7 +427,7 @@ TEAM_IDS = {
             'first': 'Quinn',
             'last': 'McDermott',
             'display': 'Quinn',
-            'team_name': "King's Landing"
+            'team_name': 'Bussy Robinson'
         }
     },
     '{FE034A7C-E6FD-4520-BB85-BA598ECB2746}': {
@@ -436,7 +436,7 @@ TEAM_IDS = {
             'first': 'Leighton',
             'last': 'Archer',
             'display': 'Leighton',
-            'team_name': 'Kitty\'s Revenge'
+            'team_name': 'Kittys Revenge'
         }
     
     },
@@ -447,7 +447,7 @@ TEAM_IDS = {
             'first': 'Chase',
             'last': 'Yoder',
             'display': 'Chase',  # or correct team name
-            'team_name': 'Moose Knuckle'
+            'team_name': 'Strib Club'
         }
     },
     '{C0284191-8F36-4640-BBA9-11596348CD1A}': 

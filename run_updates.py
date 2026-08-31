@@ -76,13 +76,78 @@ def _delete_all(table: str) -> None:
     print(f'  Cleared existing {table} rows')
 
 
+def _has_completed_matchups(season: int, week: int) -> bool:
+    query = 'SELECT 1 FROM matchups WHERE season = %s AND week = %s LIMIT 1;'
+    with Database() as conn:
+        cursor = conn.cursor()
+        cursor.execute(query, (season, week))
+        return cursor.fetchone() is not None
+
+
+def _skip_without_completed_matchups(table: str, season: int, week: int) -> bool:
+    _delete_week(table=table, season=season, week=week)
+    if _has_completed_matchups(season=season, week=week):
+        return False
+
+    print('  Skipped: this week has no completed matchup scores')
+    return True
+
+
+def _check_team_names(data: DataLoader) -> None:
+    mismatches = []
+    missing_owners = []
+
+    for team in data.teams().get('teams', []):
+        owner_id = team.get('primaryOwner')
+        configured = constants.TEAM_IDS.get(owner_id)
+        if configured is None:
+            missing_owners.append((team.get('id'), owner_id))
+            continue
+
+        espn_name = str(team.get('name') or '').strip()
+        if not espn_name:
+            espn_name = ' '.join(
+                part.strip()
+                for part in [
+                    str(team.get('location') or ''),
+                    str(team.get('nickname') or '')
+                ]
+                if part.strip()
+            )
+
+        configured_name = str(
+            configured.get('name', {}).get('team_name') or ''
+        ).strip()
+        if espn_name and espn_name != configured_name:
+            manager = configured.get('name', {}).get('display', owner_id)
+            mismatches.append((manager, configured_name, espn_name))
+
+    for manager, configured_name, espn_name in mismatches:
+        print(
+            f"  NAME CHANGED: {manager}: "
+            f"configured='{configured_name}', ESPN='{espn_name}'"
+        )
+
+    for team_id, owner_id in missing_owners:
+        print(
+            f'  UNKNOWN OWNER: ESPN team {team_id} uses owner {owner_id}; '
+            'add it to TEAM_IDS'
+        )
+
+    if not mismatches and not missing_owners:
+        print('  All configured team names match ESPN')
+
+
 def _update_matchups(season: int, week: int, data: DataLoader, teams: Teams) -> None:
     standings = Standings(season=season, week=week)
     rows = []
 
     for team_id in teams.team_ids:
         matchup = standings.get_matchup_results(week=week, team_id=team_id)
-        if matchup:
+        if matchup and (
+            float(matchup.get('score') or 0) > 0
+            or float(matchup.get('opponent_score') or 0) > 0
+        ):
             rows.append(tuple(matchup.values()))
 
     _delete_week(table='matchups', season=season, week=week)
@@ -95,6 +160,9 @@ def _update_matchups(season: int, week: int, data: DataLoader, teams: Teams) -> 
 
 
 def _update_h2h(season: int, week: int, teams: Teams) -> None:
+    if _skip_without_completed_matchups('h2h', season, week):
+        return
+
     h2h = get_h2h(teams=teams, season=season, week=week)
     rows = [
         (
@@ -107,12 +175,14 @@ def _update_h2h(season: int, week: int, teams: Teams) -> None:
         )
         for _, row in h2h.iterrows()
     ]
-    _delete_week(table='h2h', season=season, week=week)
     _commit_rows(table='h2h', columns=constants.H2H_COLUMNS, rows=rows)
     print(f'  Committed {len(rows)} h2h rows')
 
 
 def _update_schedule_switcher(season: int, week: int, teams: Teams) -> None:
+    if _skip_without_completed_matchups('schedule_switcher', season, week):
+        return
+
     switcher = schedule_switcher(teams=teams, season=season, week=week)
     rows = [
         (
@@ -125,7 +195,6 @@ def _update_schedule_switcher(season: int, week: int, teams: Teams) -> None:
         )
         for _, row in switcher.iterrows()
     ]
-    _delete_week(table='schedule_switcher', season=season, week=week)
     _commit_rows(
         table='schedule_switcher',
         columns=constants.SCHEDULE_SWITCH_COLUMNS,
@@ -141,6 +210,9 @@ def _update_efficiencies(
     params: Params,
     teams: Teams
 ) -> None:
+    if _skip_without_completed_matchups('efficiency', season, week):
+        return
+
     rosters = Rosters(year=season)
     week_data = data.load_week(week=week)
     efficiencies = get_optimal_points(
@@ -166,12 +238,14 @@ def _update_efficiencies(
         )
         for _, row in efficiencies.iterrows()
     ]
-    _delete_week(table='efficiency', season=season, week=week)
     _commit_rows(table='efficiency', columns=constants.EFFICIENCY_COLUMNS, rows=rows)
     print(f'  Committed {len(rows)} efficiency rows')
 
 
 def _update_power_rank(season: int, week: int, params: Params) -> None:
+    if _skip_without_completed_matchups('power_ranks', season, week):
+        return
+
     previous_week = update_power_ranks.fetch_prev_week(season=season, week=week)
     current_week = update_power_ranks.build_week_df(
         params=params,
@@ -184,7 +258,6 @@ def _update_power_rank(season: int, week: int, params: Params) -> None:
     power_rank = power_rank.reindex(
         columns=constants.POWER_RANK_COLUMNS.split(', ')
     ).fillna(0)
-    _delete_week(table='power_ranks', season=season, week=week)
     update_power_ranks.write_to_db(power_rank)
     print(f'  Committed {len(power_rank)} power rank rows')
 
@@ -294,6 +367,10 @@ def main() -> None:
     teams = Teams(data=data)
 
     steps: list[tuple[str, Callable[[], None]]] = [
+        (
+            'Team name check',
+            lambda: _check_team_names(data)
+        ),
         (
             'Week projections',
             lambda: print(

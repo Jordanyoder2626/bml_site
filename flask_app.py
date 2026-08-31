@@ -62,6 +62,7 @@ def home():
         previous_week_low_score=previous_week_low_score,
         last_week_bootyman=last_week_bootyman,
         is_playoff_week=is_playoff_week,
+        east_division_team_names=EAST_DIVISION_TEAM_NAMES,
         show_bootyman_status=show_bootyman_status,
         postseason_home=postseason_home
     )
@@ -93,8 +94,8 @@ def sims():
         headings_bets = tuple(['Team', 'Proj Points', 'Matchup'])
         data_bets = ut.flask_get_data(betting_table[['team', 'avg_score', 'p_win']])
     else:
-        headings_bets = tuple(['Team', 'Proj Points', 'Matchup', 'TopHalf', 'Highest', 'Lowest'])
-        data_bets = ut.flask_get_data(betting_table[['team', 'avg_score', 'p_win', 'p_tophalf', 'p_highest', 'p_lowest']])
+        headings_bets = tuple(['Team', 'Proj Points', 'Matchup', 'Highest', 'Lowest'])
+        data_bets = ut.flask_get_data(betting_table[['team', 'avg_score', 'p_win', 'p_highest', 'p_lowest']])
 
     headings_season_sim = tuple(['Team', 'Projected Wins', 'Projected Losses', 'Points', 'Playoff%', 'Finals%', 'Champion%'])
     data_season_sim = ut.flask_get_data(season_sim_table)
@@ -127,7 +128,8 @@ def sims():
         headings_r=headings_r, data_r=data_r,
         # headings_p=headings_p, data_p=data_p,
         tstamp_bets=timestamp_betting, tstamp_s=timestamp_season_sim,
-        show_season_sim=params.current_week <= params.regular_season_end
+        show_season_sim=params.current_week <= params.regular_season_end,
+        east_division_team_names=EAST_DIVISION_TEAM_NAMES
     )
 
 @app.route("/scenarios/")
@@ -205,7 +207,7 @@ def bootymen():
 
 @app.route("/records/")
 def records():
-    headings_alltime = tuple(['Team', 'Seasons', 'Playoffs', 'Overall', 'Win%', 'Top Half', 'Points'])
+    headings_alltime = tuple(['Team', 'Seasons', 'Playoffs', 'Overall', 'Win%', 'Points'])
     data_alltime = ut.flask_get_data(alltime_df[ALLTIME_COLUMNS_FLASK])
 
     headings_matchups = tuple(alltime_matchups_df.columns)

@@ -23,6 +23,27 @@ MANAGER_TO_TEAM_NAME = {
 }
 
 
+def _load_live_team_names(data: DataLoader) -> dict[str, str]:
+    live_names = {}
+    for team in data.teams().get('teams', []):
+        owner_id = team.get('primaryOwner')
+        configured = constants.TEAM_IDS.get(owner_id)
+        if not configured:
+            continue
+
+        espn_name = str(team.get('name') or '').strip()
+        if not espn_name:
+            espn_name = ' '.join(
+                str(team.get(field) or '').strip()
+                for field in ['location', 'nickname']
+                if str(team.get(field) or '').strip()
+            )
+        if espn_name:
+            live_names[configured['name']['display']] = espn_name
+
+    return live_names
+
+
 def display_team_name(name: str) -> str:
     return MANAGER_TO_TEAM_NAME.get(name, name)
 
@@ -602,6 +623,11 @@ season = constants.SEASON
 data = DataLoader(season)
 params = Params(data)
 teams = Teams(data)
+MANAGER_TO_TEAM_NAME.update(_load_live_team_names(data))
+EAST_DIVISION_TEAM_NAMES = {
+    display_team_name(manager)
+    for manager in league_rules.EAST_DIVISION
+}
 week = params.regular_season_end+1 if params.current_week > params.regular_season_end+1 else params.current_week
 previous_week = max(params.current_week - 1, 0)
 power_data_week = (
@@ -638,6 +664,18 @@ ss_data = Database(table='schedule_switcher', season=season, week=completed_week
 alltime_df = Database(table='alltime_standings').retrieve_data(how='all')
 records_df = Database(table='records').retrieve_data(how='all')
 actual_matchups_df = Database(table='matchups').retrieve_data(how='all')
+if not actual_matchups_df.empty:
+    for score_column in ['score', 'opponent_score']:
+        actual_matchups_df[score_column] = pd.to_numeric(
+            actual_matchups_df[score_column],
+            errors='coerce'
+        )
+    # ESPN includes future matchups as 0-0 rows. They are schedule entries,
+    # not ties, so exclude them from all-time matchup and rivalry records.
+    actual_matchups_df = actual_matchups_df[
+        (actual_matchups_df['score'] > 0)
+        | (actual_matchups_df['opponent_score'] > 0)
+    ].copy()
 alltime_matchups_df = build_all_time_matchups_table(actual_matchups_df)
 rivalry_records_df = build_rivalry_record_rows(actual_matchups_df)
 records_df = records_df.copy()
@@ -878,7 +916,6 @@ else:
     betting_table = betting_table.sort_values(['matchup_id', 'avg_score'])
     betting_table['avg_score'] = betting_table.avg_score.round(2).apply(lambda x: f'{x:.2f}')
     betting_table['p_win'] = betting_table.p_win.apply(lambda x: simulations.calculate_odds(init_prob=x))
-    betting_table['p_tophalf'] = betting_table.p_tophalf.apply(lambda x: simulations.calculate_odds(init_prob=x))
     betting_table['p_highest'] = betting_table.p_highest.apply(lambda x: simulations.calculate_odds(init_prob=x))
     betting_table['p_lowest'] = betting_table.p_lowest.apply(lambda x: simulations.calculate_odds(init_prob=x))
     betting_table = display_team_values(betting_table, ['team'])
