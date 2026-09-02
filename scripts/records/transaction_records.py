@@ -518,6 +518,70 @@ def transaction_counter_records() -> pd.DataFrame:
     )
 
 
+def favorite_player_records(top_n: int = 5) -> list[dict]:
+    """Return each manager's most frequently rostered players by distinct season."""
+    scores = _clean_numeric(
+        _read_table("player_week_scores"),
+        ["season", "player_id", "fantasy_team_id"],
+    )
+    teams = _clean_numeric(
+        _read_table("fantasy_teams"),
+        ["season", "team_id"],
+    )
+
+    if scores.empty or teams.empty:
+        return []
+
+    rostered = scores[
+        scores["player_id"].notna()
+        & scores["fantasy_team_id"].notna()
+        & scores["player_name"].notna()
+        & ~scores["position"].fillna("").str.upper().isin(["DST", "D/ST", "DEF"])
+    ].copy()
+    rostered = rostered.merge(
+        teams[["season", "team_id", "owner_id", "display_name"]],
+        left_on=["season", "fantasy_team_id"],
+        right_on=["season", "team_id"],
+        how="inner",
+    )
+
+    manager_names = (
+        teams
+        .sort_values("season")
+        .drop_duplicates("owner_id", keep="last")
+        .set_index("owner_id")["display_name"]
+        .to_dict()
+    )
+    rostered["manager"] = rostered["owner_id"].map(manager_names)
+
+    # Some managers have had more than one ESPN owner ID. Consolidate those IDs
+    # under the displayed person before counting and ranking their players.
+    # This also reduces weekly appearances or multiple stints to one player-year.
+    rostered = rostered.drop_duplicates(["manager", "season", "player_id"])
+    counts = (
+        rostered
+        .groupby(["manager", "player_id"], as_index=False)
+        .agg(player_name=("player_name", "last"), years=("season", "nunique"))
+    )
+    counts = counts[counts["manager"].str.casefold() != "peyton"]
+    counts = counts.sort_values(
+        ["manager", "years", "player_name"],
+        ascending=[True, False, True],
+    )
+    counts["rank"] = counts.groupby("manager").cumcount() + 1
+    counts = counts[counts["rank"] <= top_n]
+
+    favorites = []
+    for manager, group in counts.groupby("manager", sort=True):
+        players = [
+            f"{row.player_name} ({int(row.years)} {'year' if row.years == 1 else 'years'})"
+            for row in group.itertuples()
+        ]
+        favorites.append({"manager": manager, "players": players})
+
+    return favorites
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Print best waiver/free-agent pickups by post-pickup PPG."
