@@ -87,93 +87,27 @@ table.center {
 </div>
 
 <br>
-<h1>Trade Vault</h1>
-<p>Trades ranked by team points per game before and after the deal</p>
+<h1>Favorite Players</h1>
+<p>Top players by separate seasons rostered. Defenses are excluded, and repeat pickups in one season count once.</p>
 
-<h3>Most Lopsided Trades</h3>
 <div class="tscroll" style="overflow-x:auto;">
-    <table class="table table-hover center content-table" style="table-layout:auto; width:85%; white-space:nowrap;">
+    <table class="table table-hover center content-table" style="table-layout:auto; width:90%; white-space:nowrap;">
         <thead>
             <tr>
-                {% for header in headings_trades %}
+                {% for header in headings_favorites %}
                     <th>{{ header }}</th>
                 {% endfor %}
             </tr>
         </thead>
         <tbody>
-        {% for row in data_lopsided %}
+        {% for favorite in favorite_players %}
             <tr>
-                {% for cell in row %}
-                    <td>{{ cell|safe }}</td>
+                <td><strong>{{ favorite.manager }}</strong></td>
+                {% for player in favorite.players %}
+                    <td>{{ player }}</td>
                 {% endfor %}
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<br>
-<h3>Most Even Trades</h3>
-<div class="tscroll" style="overflow-x:auto;">
-    <table class="table table-hover center content-table" style="table-layout:auto; width:85%; white-space:nowrap;">
-        <thead>
-            <tr>
-                {% for header in headings_trades %}
-                    <th>{{ header }}</th>
-                {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-        {% for row in data_even %}
-            <tr>
-                {% for cell in row %}
-                    <td>{{ cell|safe }}</td>
-                {% endfor %}
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<br>
-<h3>Most Mutually Beneficial Trades</h3>
-<div class="tscroll" style="overflow-x:auto;">
-    <table class="table table-hover center content-table" style="table-layout:auto; width:85%; white-space:nowrap;">
-        <thead>
-            <tr>
-                {% for header in headings_trades %}
-                    <th>{{ header }}</th>
-                {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-        {% for row in data_mutual_benefit %}
-            <tr>
-                {% for cell in row %}
-                    <td>{{ cell|safe }}</td>
-                {% endfor %}
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<br>
-<h3>Most Mutually Destructive Trades</h3>
-<div class="tscroll" style="overflow-x:auto;">
-    <table class="table table-hover center content-table" style="table-layout:auto; width:85%; white-space:nowrap;">
-        <thead>
-            <tr>
-                {% for header in headings_trades %}
-                    <th>{{ header }}</th>
-                {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-        {% for row in data_mutual_destruction %}
-            <tr>
-                {% for cell in row %}
-                    <td>{{ cell|safe }}</td>
+                {% for unused in range(5 - favorite.players|length) %}
+                    <td>&mdash;</td>
                 {% endfor %}
             </tr>
         {% endfor %}

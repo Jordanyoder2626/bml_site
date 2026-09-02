@@ -4,8 +4,8 @@ from flask_fontawesome import FontAwesome
 import scripts.utils.utils as ut
 from data_prep import *
 from scripts.records.transaction_records import (
+    favorite_player_records,
     pickup_ppg_records,
-    trade_vault_records,
     transaction_counter_records,
 )
 from scripts.utils.constants import STANDINGS_COLUMNS_FLASK, RECORDS_COLUMNS_FLASK, ALLTIME_COLUMNS_FLASK
@@ -15,7 +15,7 @@ from scripts.utils.constants import STANDINGS_COLUMNS_FLASK, RECORDS_COLUMNS_FLA
 app = Flask(__name__)
 fa = FontAwesome(app)
 transaction_vault_cache = None
-trade_vault_cache = None
+favorite_players_cache = None
 transaction_vault_page_cache = None
 transaction_counter_cache = None
 
@@ -224,7 +224,7 @@ def records():
 @app.route("/transaction-vault/")
 def transaction_vault():
     global transaction_vault_cache
-    global trade_vault_cache
+    global favorite_players_cache
     global transaction_vault_page_cache
     global transaction_counter_cache
     if transaction_vault_page_cache is not None:
@@ -232,13 +232,13 @@ def transaction_vault():
 
     if transaction_vault_cache is None:
         transaction_vault_cache = pickup_ppg_records(top_n=None)
-    if trade_vault_cache is None:
-        trade_vault_cache = trade_vault_records()
+    if favorite_players_cache is None:
+        favorite_players_cache = favorite_player_records(top_n=5)
     if transaction_counter_cache is None:
         transaction_counter_cache = transaction_counter_records()
 
     pickup_records = transaction_vault_cache
-    trade_records = trade_vault_cache
+    favorite_players = favorite_players_cache
     transaction_counter = transaction_counter_cache
     headings = tuple(['Rank', 'Season', 'Player Name', 'Week Picked Up', 'PPG After Pickup', 'Team'])
     headings_counter = tuple(transaction_counter.columns)
@@ -263,44 +263,13 @@ def transaction_vault():
         data_qb = ut.flask_get_data(qb_records[display_cols])
         data_non_qb = ut.flask_get_data(non_qb_records[display_cols])
 
-    headings_trades = tuple(['Trade', 'Season', 'Week', 'Team 1 Received', 'Team 1 PPG Change', 'Team 2 Received', 'Team 2 PPG Change'])
-    trade_cols = ['trade_order', 'season', 'week', 'team_1_received_display', 'team_1_ppg_change', 'team_2_received_display', 'team_2_ppg_change']
-    trade_tables = {}
-    for key in ['lopsided', 'even', 'mutual_benefit', 'mutual_destruction']:
-        table = trade_records.get(key)
-        if table is None or table.empty:
-            trade_tables[key] = tuple()
-            continue
-
-        table = table.copy()
-        table['team_1_received_display'] = table.apply(
-            lambda row: f"{row['team_1']} received:<br>{str(row['team_1_received']).replace(', ', '<br>')}",
-            axis=1,
-        )
-        table['team_2_received_display'] = table.apply(
-            lambda row: f"{row['team_2']} received:<br>{str(row['team_2_received']).replace(', ', '<br>')}",
-            axis=1,
-        )
-        table['team_1_ppg_change'] = table.apply(
-            lambda row: f"{row['team_1_before_ppg']:.2f} -> {row['team_1_after_ppg']:.2f}<br>({row['team_1_ppg_delta']:+.2f})",
-            axis=1,
-        )
-        table['team_2_ppg_change'] = table.apply(
-            lambda row: f"{row['team_2_before_ppg']:.2f} -> {row['team_2_after_ppg']:.2f}<br>({row['team_2_ppg_delta']:+.2f})",
-            axis=1,
-        )
-        trade_tables[key] = ut.flask_get_data(table[trade_cols])
-
     transaction_vault_page_cache = {
         "headings_qb": headings,
         "data_qb": data_qb,
         "headings_non_qb": headings,
         "data_non_qb": data_non_qb,
-        "headings_trades": headings_trades,
-        "data_lopsided": trade_tables['lopsided'],
-        "data_even": trade_tables['even'],
-        "data_mutual_benefit": trade_tables['mutual_benefit'],
-        "data_mutual_destruction": trade_tables['mutual_destruction'],
+        "headings_favorites": ("Manager", "Favorite #1", "Favorite #2", "Favorite #3", "Favorite #4", "Favorite #5"),
+        "favorite_players": favorite_players,
         "headings_counter": headings_counter,
         "data_counter": data_counter,
     }
