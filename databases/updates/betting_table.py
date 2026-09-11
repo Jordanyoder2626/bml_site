@@ -12,6 +12,7 @@ from scripts.home.standings import Standings
 from scripts.utils.database import Database
 from scripts.utils import constants
 from scripts.simulations import simulations
+from scripts.simulations.live import build_live_lineups, load_game_progress
 from databases.updates import update_week_projections
 
 
@@ -94,7 +95,7 @@ def run_week(
         row_count = update_week_projections.update_week(
             season=season,
             week=week,
-            update_actuals=False
+            update_actuals=True
         )
         print(f'  Upserted {row_count} projections')
 
@@ -132,6 +133,8 @@ def run_week(
         return
 
     projections = _load_projections(season=season, week=week)
+    progress = load_game_progress(season=season, week=week)
+    lineups = build_live_lineups(week_data, projections, progress, season, week)
 
     start = time.perf_counter()
     sim_scores, sim_wins, sim_tophalf, sim_highest, sim_lowest = simulations.simulate_week(
@@ -144,7 +147,8 @@ def run_week(
         projections=projections,
         week=week,
         n_sims=n_sims,
-        use_actuals=False
+        use_actuals=True,
+        prepared_lineups=lineups
     )
     end = time.perf_counter()
 
@@ -214,6 +218,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    constants.SEASON = args.season
     data = DataLoader(year=args.season)
     rosters = Rosters(year=args.season)
     params = Params(data)

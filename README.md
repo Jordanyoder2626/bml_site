@@ -12,6 +12,32 @@ python -m scripts.export_static
 This writes the site to `docs/` and copies `static/` assets into `docs/static/`.
 GitHub Pages is built from `docs/`; open `docs/index.html` locally to preview the static site.
 
+To update a week, export the site, commit, and push in one command from Git Bash:
+
+```bash
+bash scripts/publish_week.sh 2026 2
+```
+
+Replace `2026 2` with the season and week to publish. The script sets `SEASON`
+and `CURRENT_WEEK` in `scripts/utils/constants.py`, runs all data updates, exports
+to `docs/`, and commits those two paths before pushing the current branch to
+`origin`. The push includes any existing unpushed commits on that branch.
+Use your GitHub Pages source branch (normally `main`).
+
+Your Python dependencies, `.env`, database access, and GitHub authentication must
+already be configured. The script uses your active Python environment, otherwise
+looks for `.venv` or `venv`, then falls back to `python`. To select one explicitly:
+
+```bash
+PYTHON="/c/path/to/python.exe" bash scripts/publish_week.sh 2026 2
+```
+
+Commit or stash existing changes to `docs/` and `scripts/utils/constants.py`, and
+commit or unstage other staged changes before running. Failures stop the script
+before subsequent steps; completed database updates and local files remain for
+inspection. A rejected push leaves the local commit intact so you can resolve
+the Git issue and retry `git push origin HEAD`.
+
 # Power Ranking
 A combination of five factors are used to calcuate a weekly Power Score for each team, which is then normalized so that 100 is an average team. 
 1. **Wins**: Total wins on the season.

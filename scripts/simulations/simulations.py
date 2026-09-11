@@ -337,7 +337,10 @@ def simulate_lineup(lineup: dict) -> float:
             else:
                 sim = player['projection']
 
-            projected_points += sim
+            # Live forecasts retain banked points and scale only future scoring.
+            remaining = player.get('remaining_fraction', 1.0)
+            actual = player.get('actual', 0.0) if 'remaining_fraction' in player else 0.0
+            projected_points += actual + sim * remaining
     return projected_points
 
 
@@ -348,7 +351,8 @@ def simulate_matchup(week_data: DataLoader,
                      week: int,
                      matchups: list[dict],
                      projections: list[dict],
-                     use_actuals: bool = True) -> list[dict]:
+                     use_actuals: bool = True,
+                     prepared_lineups: dict | None = None) -> list[dict]:
     """
     Simulate matchups of two teams
 
@@ -370,7 +374,7 @@ def simulate_matchup(week_data: DataLoader,
         game_id = idx + 1  # used to group matchups for website
 
         team1 = m['team1']
-        lineup1 = get_best_lineup(week_data=week_data,
+        lineup1 = prepared_lineups[team1] if prepared_lineups is not None else get_best_lineup(week_data=week_data,
                                   rosters=rosters,
                                   params=params,
                                   replacement_players=replacement_players,
@@ -382,7 +386,7 @@ def simulate_matchup(week_data: DataLoader,
 
         if 'team2' in m:
             team2 = m['team2']
-            lineup2 = get_best_lineup(week_data=week_data,
+            lineup2 = prepared_lineups[team2] if prepared_lineups is not None else get_best_lineup(week_data=week_data,
                                       rosters=rosters,
                                       params=params,
                                       replacement_players=replacement_players,
@@ -401,14 +405,14 @@ def simulate_matchup(week_data: DataLoader,
                 'game_id': game_id,
                 'team': team1,
                 'score': sim1,
-                'result': 1 if sim1 > sim2 else 0
+                'result': 1 if sim1 > sim2 else (0.5 if sim1 == sim2 else 0)
             })
 
             matchup_sim.append({
                 'game_id': game_id,
                 'team': team2,
                 'score': sim2,
-                'result': 1 if sim2 > sim1 else 0
+                'result': 1 if sim2 > sim1 else (0.5 if sim1 == sim2 else 0)
             })
         else:
             # team has no opponent (playoff bye)
@@ -430,7 +434,8 @@ def simulate_week(week_data: DataLoader,
                   projections: list[dict],
                   week: int,
                   n_sims: int = 10,
-                  use_actuals: bool = True) -> list:
+                  use_actuals: bool = True,
+                  prepared_lineups: dict | None = None) -> list:
     """Simulate a week n_sims times and calculate number of occurrences for each category below"""
 
     # initialize counters
@@ -449,20 +454,26 @@ def simulate_week(week_data: DataLoader,
                                        week=week,
                                        matchups=matchups,
                                        projections=projections,
-                                       use_actuals=use_actuals)
+                                       use_actuals=use_actuals,
+                                       prepared_lineups=prepared_lineups)
 
         # update counters after simulation
         for team in matchup_sim:
             n_scores[team['team']] += team['score']
-            if team['result'] == 1:
-                n_wins[team['team']] += 1
+            n_wins[team['team']] += team['result']
 
-        for_tophalf = sorted(matchup_sim, key=lambda d: d['score'], reverse=True)[:int((len(teams.team_ids)/2))]
-        for team in for_tophalf:
-            n_tophalf[team['team']] += 1
-
-        n_highest[max(matchup_sim, key=lambda x: x['score'])['team']] += 1
-        n_lowest[min(matchup_sim, key=lambda x: x['score'])['team']] += 1
+        median = np.median([team['score'] for team in matchup_sim])
+        highest = max(team['score'] for team in matchup_sim)
+        lowest = min(team['score'] for team in matchup_sim)
+        high_count = sum(team['score'] == highest for team in matchup_sim)
+        low_count = sum(team['score'] == lowest for team in matchup_sim)
+        for team in matchup_sim:
+            score = team['score']
+            n_tophalf[team['team']] += 1 if score > median else (0.5 if score == median else 0)
+            if score == highest:
+                n_highest[team['team']] += 1 / high_count
+            if score == lowest:
+                n_lowest[team['team']] += 1 / low_count
 
     return [n_scores, n_wins, n_tophalf, n_highest, n_lowest]
 
