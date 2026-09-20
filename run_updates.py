@@ -31,7 +31,10 @@ def _parse_args() -> argparse.Namespace:
         description='Run all BML data updates for the configured season/week.'
     )
     parser.add_argument('--season', type=int, default=constants.SEASON)
-    parser.add_argument('--week', type=int, default=constants.CURRENT_WEEK)
+    parser.add_argument(
+        '--week', type=int, choices=range(1, 19), default=constants.CURRENT_WEEK,
+        help='Week to publish (1-18); completed results refresh the previous week.'
+    )
     parser.add_argument('--n-sims', type=int, default=1000)
     parser.add_argument(
         '--refresh-betting-projections',
@@ -365,6 +368,7 @@ def main() -> None:
     data = DataLoader(year=args.season)
     params = Params(data)
     teams = Teams(data=data)
+    results_week = args.week - 1
 
     steps: list[tuple[str, Callable[[], None]]] = [
         (
@@ -377,26 +381,35 @@ def main() -> None:
                 f"  Upserted {update_week_projections.update_week(args.season, args.week)} projections"
             )
         ),
-        (
-            'Matchups',
-            lambda: _update_matchups(args.season, args.week, data, teams)
-        ),
-        (
-            'H2H',
-            lambda: _update_h2h(args.season, args.week, teams)
-        ),
-        (
-            'Schedule switcher',
-            lambda: _update_schedule_switcher(args.season, args.week, teams)
-        ),
-        (
-            'Efficiencies',
-            lambda: _update_efficiencies(args.season, args.week, data, params, teams)
-        ),
-        (
-            'Power ranks',
-            lambda: _update_power_rank(args.season, args.week, params)
-        ),
+    ]
+
+    # Results belong to the week just finished; predictions use the publish week.
+    # There is no completed week to import when publishing week 1.
+    if results_week >= 1:
+        steps.extend([
+            (
+                f'Matchups (week {results_week})',
+                lambda: _update_matchups(args.season, results_week, data, teams)
+            ),
+            (
+                'H2H',
+                lambda: _update_h2h(args.season, results_week, teams)
+            ),
+            (
+                'Schedule switcher',
+                lambda: _update_schedule_switcher(args.season, results_week, teams)
+            ),
+            (
+                'Efficiencies',
+                lambda: _update_efficiencies(args.season, results_week, data, params, teams)
+            ),
+            (
+                'Power ranks',
+                lambda: _update_power_rank(args.season, results_week, params)
+            ),
+        ])
+
+    steps.extend([
         (
             'Betting table',
             lambda: _update_betting_table(
@@ -413,7 +426,7 @@ def main() -> None:
             'Season simulations',
             lambda: _update_season_simulations(args.week, args.season)
         ),
-    ]
+    ])
 
     if not args.skip_season_wide:
         steps.extend([

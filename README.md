@@ -24,6 +24,12 @@ to `docs/`, and commits those two paths before pushing the current branch to
 `origin`. The push includes any existing unpushed commits on that branch.
 Use your GitHub Pages source branch (normally `main`).
 
+The week argument is the upcoming/current week: publishing `2026 2` imports
+finished week 1 matchups, H2H results, schedule scenarios, efficiencies, and power
+ranks, then generates week 2 projections and simulations. Publishing week 1
+skips completed-results updates. Rerunning replaces the previous week's result
+rows, so rerun the same command to repair a missing import.
+
 Your Python dependencies, `.env`, database access, and GitHub authentication must
 already be configured. The script uses your active Python environment, otherwise
 looks for `.venv` or `venv`, then falls back to `python`. To select one explicitly:
