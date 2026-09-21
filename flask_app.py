@@ -54,6 +54,7 @@ def home():
         headings_st=headings_st, data_st=data_st,
         data_prev=data_prev,
         data_current=data_current,
+        tstamp_bets=timestamp_betting,
         headings_cl=headings_cl, data_cl=data_cl,
         headings_el=headings_el, data_el=data_el,
         headings_bb=headings_bb, data_bb=data_bb,

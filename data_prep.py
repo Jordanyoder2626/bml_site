@@ -912,7 +912,7 @@ if betting_table.empty:
     timestamp_betting = 'No data'
     betting_table = pd.DataFrame(columns=['matchup_id', 'team', 'avg_score', 'p_win', 'p_tophalf', 'p_highest', 'p_lowest'])
 else:
-    timestamp_betting = pd.to_datetime(betting_table.created.max()).strftime("%A, %b %d %Y")
+    timestamp_betting = pd.to_datetime(betting_table.created.max()).strftime("%A, %b %d %Y at %I:%M %p")
     betting_table = betting_table.sort_values(['matchup_id', 'avg_score'])
     betting_table['avg_score'] = betting_table.avg_score.round(2).apply(lambda x: f'{x:.2f}')
     betting_table['p_win'] = betting_table.p_win.apply(lambda x: simulations.calculate_odds(init_prob=x))
