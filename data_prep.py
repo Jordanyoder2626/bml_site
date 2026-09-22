@@ -684,6 +684,8 @@ season_record_categories = {
     'Most Losses',
     'Highest PPG',
     'Lowest PPG',
+    'Highest PPG (since 2020)',
+    'Lowest PPG (since 2020)',
     'Most Top Half Wins',
     'Most Top Half Losses'
 }

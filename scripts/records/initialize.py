@@ -315,7 +315,10 @@ def get_standings_records(last_season):
 
     most_m_wins = df[df.m_wins == df.m_wins.max()]
     most_m_losses = df[df.m_losses == df.m_losses.max()]
-    completed_matchups = _completed_season_matchups(matchups)
+    # Standard scoring in 2018-2019 is not comparable to the scoring since 2020.
+    completed_matchups = _completed_season_matchups(
+        matchups[matchups.season >= 2020]
+    )
     completed_df = (
         completed_matchups
         .groupby(['season', 'team'], as_index=False)
@@ -331,12 +334,16 @@ def get_standings_records(last_season):
     most_ppg = completed_df[completed_df.ppg == completed_df.ppg.max()]
     least_ppg = completed_df[completed_df.ppg == completed_df.ppg.min()]
 
-    return pd.DataFrame([
+    rows = [
         _season_record_rows(most_m_wins, 'Most Wins', 'm_wins'),
-        _season_record_rows(most_m_losses, 'Most Losses', 'm_losses'),
-        _season_record_rows(most_ppg, 'Highest PPG', 'ppg'),
-        _season_record_rows(least_ppg, 'Lowest PPG', 'ppg')
-    ], columns=['category','record','holder','season','week'])
+        _season_record_rows(most_m_losses, 'Most Losses', 'm_losses')
+    ]
+    if not completed_df.empty:
+        rows.extend([
+            _season_record_rows(most_ppg, 'Highest PPG (since 2020)', 'ppg'),
+            _season_record_rows(least_ppg, 'Lowest PPG (since 2020)', 'ppg')
+        ])
+    return pd.DataFrame(rows, columns=['category','record','holder','season','week'])
 
 def get_matchup_records(last_season):
     try:
@@ -347,6 +354,7 @@ def get_matchup_records(last_season):
 
         matchups = matchups[
             (matchups.season <= last_season)
+            & (matchups.season >= 2020)
             & matchups.opponent.notna()
             & matchups.opponent_score.notna()
         ].copy()
@@ -416,6 +424,8 @@ def get_matchup_records(last_season):
             category_row('Closest Matchup', 'margin', highest=False),
             category_row('Biggest Blowout', 'margin', highest=True)
         ]
+        for row in rows:
+            row[0] += ' (since 2020)'
         return pd.DataFrame(rows, columns=['category','record','holder','season','week'])
 
     except Exception as e:
