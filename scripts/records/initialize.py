@@ -354,6 +354,14 @@ def get_matchup_records(last_season):
         if matchups.empty:
             return pd.DataFrame(columns=['category','record','holder','season','week'])
 
+        # Keep both teams' scores before collapsing each matchup to one row.
+        highest_score = matchups[matchups.score == matchups.score.max()]
+        lowest_score = matchups[matchups.score == matchups.score.min()]
+        single_game_rows = [
+            _record_rows(highest_score, 'Highest Single Game Score', 'score'),
+            _record_rows(lowest_score, 'Lowest Single Game Score', 'score')
+        ]
+
         matchups['pair_key'] = matchups.apply(
             lambda x: "|".join(sorted([str(x.team), str(x.opponent)])),
             axis=1
@@ -402,7 +410,7 @@ def get_matchup_records(last_season):
 
             return _record_rows(sub, category, col, holder_col='holder')
 
-        rows = [
+        rows = single_game_rows + [
             category_row('Most Matchup Points', 'total_points', highest=True),
             category_row('Fewest Matchup Points', 'total_points', highest=False),
             category_row('Closest Matchup', 'margin', highest=False),
