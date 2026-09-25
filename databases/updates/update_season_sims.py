@@ -18,7 +18,7 @@ import pandas as pd
 warnings.filterwarnings("ignore", category=UserWarning)
 
 
-N_SIMS = 100
+N_SIMS = 500
 RUN_WEEKS = [week for week in range(1, 15)]
 
 
