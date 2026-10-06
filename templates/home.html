@@ -172,6 +172,7 @@
                         <th>Home</th>
                         <th colspan="2">Score</th>
                         <th>Away</th>
+                        <th title="All-time home team wins-losses (ties shown when applicable)">H2H Record</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -193,6 +194,8 @@
                                 <i class="fa fa-poop low-score-icon" aria-hidden="true"></i>
                             {% endif %}
                         </td>
+                        {% set h2h = row[4].split('-') %}
+                        <td{% if h2h[0] == h2h[1] %} class="tied-h2h-record" title="Head-to-head series tied"{% endif %}>{{ row[4] }}</td>
                     </tr>
                 {% endfor %}
                 </tbody>
@@ -212,6 +215,7 @@
                         <th>Home</th>
                         <th colspan="2">Odds</th>
                         <th>Away</th>
+                        <th title="All-time home team wins-losses (ties shown when applicable)">H2H Record</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -221,6 +225,8 @@
                         <td>{{ row[1]|safe }}</td>
                         <td>{{ row[2]|safe }}</td>
                         <td class="home-team-cell home-away-team-cell">{{ row[3] }}</td>
+                        {% set h2h = row[4].split('-') %}
+                        <td{% if h2h[0] == h2h[1] %} class="tied-h2h-record" title="Head-to-head series tied"{% endif %}>{{ row[4] }}</td>
                     </tr>
                 {% endfor %}
                 </tbody>

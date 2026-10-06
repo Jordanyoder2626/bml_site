@@ -209,6 +209,12 @@ html {
   border-left: 1px solid #dddddd;
 }
 
+.home-summary-table tbody td.tied-h2h-record {
+  color: #1d4ed8;
+  background-color: #dbeafe;
+  font-weight: 700;
+}
+
 .content-table.home-scenario-table {
   margin: 10px auto;
   white-space: normal;

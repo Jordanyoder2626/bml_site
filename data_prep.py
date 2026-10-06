@@ -828,6 +828,38 @@ clinches['bootyman'] = format_bootyman_scenario_statements(
 )
 
 all_matchups = teams._fetch_matchups()
+# Key each directed result by season/week so refreshed scores replace stored
+# results without counting last week's games twice. Ignore in-progress games.
+home_h2h_results = {}
+for game in actual_matchups_df.itertuples(index=False):
+    if pd.isna(game.matchup_result):
+        continue
+    if game.season > season or (game.season == season and game.week > previous_week):
+        continue
+    home_h2h_results[(game.season, game.week, game.team, game.opponent)] = float(game.matchup_result)
+
+for matchup in all_matchups:
+    if matchup['week'] != previous_week or 'team2' not in matchup:
+        continue
+    home_manager = manager_display_name(matchup['team1'])
+    away_manager = manager_display_name(matchup['team2'])
+    score1, score2 = matchup['score1'], matchup['score2']
+    result = 1 if score1 > score2 else 0 if score1 < score2 else 0.5
+    home_h2h_results[(season, previous_week, home_manager, away_manager)] = result
+    home_h2h_results[(season, previous_week, away_manager, home_manager)] = 1 - result
+
+home_h2h_records = {}
+for (_, _, manager, opponent), result in home_h2h_results.items():
+    record = home_h2h_records.setdefault((manager, opponent), [0, 0, 0])
+    if result in (1, 0, 0.5):
+        record[{1: 0, 0: 1, 0.5: 2}[result]] += 1
+
+
+def home_h2h_record(team1_id: int, team2_id: int) -> str:
+    pair = (manager_display_name(team1_id), manager_display_name(team2_id))
+    return _format_matchup_record(*home_h2h_records.get(pair, (0, 0, 0)))
+
+
 previous_week_results = []
 previous_week_low_score = None
 if previous_week >= 1:
@@ -845,7 +877,8 @@ if previous_week >= 1:
             team_display_name(matchup['team1']),
             _format_score(matchup['score1']),
             _format_score(matchup['score2']),
-            team_display_name(matchup['team2'])
+            team_display_name(matchup['team2']),
+            home_h2h_record(matchup['team1'], matchup['team2'])
         ])
 
 current_week_matchups = []
@@ -859,7 +892,8 @@ for matchup in all_matchups:
             team_id=matchup['team1']
         ),
         'team1': team_display_name(matchup['team1']),
-        'team2': team_display_name(matchup['team2'])
+        'team2': team_display_name(matchup['team2']),
+        'h2h_record': home_h2h_record(matchup['team1'], matchup['team2'])
     })
 
 last_week_bootyman = None
@@ -932,7 +966,8 @@ for matchup in current_week_matchups:
         matchup['team1'],
         odds_by_team.get(matchup['team1'], '-'),
         odds_by_team.get(matchup['team2'], '-'),
-        matchup['team2']
+        matchup['team2'],
+        matchup['h2h_record']
     ])
 
 is_playoff_week = params.current_week > params.regular_season_end
