@@ -61,10 +61,18 @@ grep -q '^CURRENT_WEEK = ' scripts/utils/constants.py
 sed -i -e "s/^SEASON = .*/SEASON = $season/" \
        -e "s/^CURRENT_WEEK = .*/CURRENT_WEEK = $week/" scripts/utils/constants.py
 
-"$python_cmd" run_updates.py --season "$season" --week "$week"
-"$python_cmd" -m scripts.export_static
+# Suppress these known dependency warnings only during publishing.
+# Match TripleDES by message/module because its warning category is third-party.
+python_warning_filters=(
+    -W "ignore:TripleDES has been moved::paramiko.pkey"
+    -W "ignore:TripleDES has been moved::paramiko.transport"
+    -W "ignore:pandas only supports SQLAlchemy connectable:UserWarning:scripts.utils.database"
+)
+"$python_cmd" "${python_warning_filters[@]}" run_updates.py --season "$season" --week "$week"
+"$python_cmd" "${python_warning_filters[@]}" -m scripts.export_static
 
-git add -- docs scripts/utils/constants.py
+# Silence conversion warnings for this add while retaining Git's line-ending rules.
+git -c core.safecrlf=false add -- docs scripts/utils/constants.py
 if git diff --cached --quiet; then
     echo "No new export changes to commit."
 else
