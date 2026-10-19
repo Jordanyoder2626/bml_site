@@ -10,6 +10,8 @@ from scripts.utils.database import Database
 from scripts.api.Settings import Params
 from scripts.api.Teams import Teams
 from scripts.home.standings import Standings
+from scripts.home.monday_miracles import build_monday_miracles, current_week_matchups as live_week_matchups
+from scripts.simulations.live import build_live_lineups, load_game_progress
 from scripts.utils import constants
 from scripts.utils import league_rules
 import scripts.scenarios.scenarios as scenarios
@@ -895,6 +897,26 @@ for matchup in all_matchups:
         'team2': team_display_name(matchup['team2']),
         'h2h_record': home_h2h_record(matchup['team1'], matchup['team2'])
     })
+
+show_monday_miracles = day == 'Mon'
+monday_miracles = []
+if show_monday_miracles and not betting_table.empty:
+    monday_probabilities = {
+        team_id: float(row.p_win)
+        for row in betting_table.itertuples(index=False)
+        for team_id in [_team_id_from_manager(row.team)]
+        if team_id is not None
+    }
+    monday_week_data = data.load_week(params.current_week)
+    monday_matchups = live_week_matchups(monday_week_data, params.current_week)
+    monday_lineups = build_live_lineups(
+        monday_week_data, [],
+        load_game_progress(season, params.current_week),
+        season, params.current_week
+    )
+    monday_miracles = build_monday_miracles(
+        monday_matchups, monday_lineups, monday_probabilities, team_display_name
+    )
 
 last_week_bootyman = None
 if (

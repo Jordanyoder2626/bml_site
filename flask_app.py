@@ -62,6 +62,8 @@ def home():
         current_week=params.current_week,
         previous_week_low_score=previous_week_low_score,
         last_week_bootyman=last_week_bootyman,
+        show_monday_miracles=show_monday_miracles,
+        monday_miracles=monday_miracles,
         is_playoff_week=is_playoff_week,
         east_division_team_names=EAST_DIVISION_TEAM_NAMES,
         show_bootyman_status=show_bootyman_status,

@@ -237,7 +237,25 @@
 </section>
 {% endif %}
 
-{% if last_week_bootyman and (not is_playoff_week or current_week == 15) %}
+{% if show_monday_miracles %}
+<section class="bootyman-callout">
+    <h2>Monday Night Miracles</h2>
+    {% if monday_miracles %}
+    <div class="tscroll" style="overflow-x:auto;">
+        <table class="table table-hover center content-table home-scenario-table monday-miracles-table" style="width:80%">
+            <thead><tr><th>Team</th><th>Opponent</th><th>What They Need</th></tr></thead>
+            <tbody>
+            {% for miracle in monday_miracles %}
+                <tr><td>{{ miracle.team }}</td><td>{{ miracle.opponent }}</td><td>{{ miracle.requirement }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p>No Monday night comeback scenarios{% if tstamp_bets == 'No data' %}: betting data is unavailable{% else %} remain based on the latest betting table{% endif %}.</p>
+    {% endif %}
+</section>
+{% elif last_week_bootyman and (not is_playoff_week or current_week == 15) %}
 <section class="bootyman-callout">
     <h2>Congrats to Last Week's Bootyman:</h2>
     {% if last_week_bootyman.logo %}
