@@ -6,7 +6,7 @@ clock remaining. This is a time-based estimate, not a possession or injury model
 Overtime uses the remaining overtime clock. Missing game status stops the update
 instead of silently publishing pregame odds.
 
-FantasyPros player projections remain full-game baselines in player_projections;
+ESPN player projections remain full-game baselines in player_projections;
 live adjustments are applied once when calculating betting_table.avg_score and
 the associated probabilities. Exact ties split matchup credit and highest/lowest
 credit; a median tie receives half credit.

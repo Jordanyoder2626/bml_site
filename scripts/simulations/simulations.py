@@ -10,107 +10,59 @@ from scripts.utils import league_rules
 import scipy.stats as st
 import pandas as pd
 import numpy as np
-import difflib
 import random
+import re
 pd.options.mode.chained_assignment = None
 
 
-def _match_player_to_espn(the_player: str,
-                          players: list) -> int | None:
-    """
-    Matches a name to ESPN's database and returns a player ID
+def get_week_projections(week: int, season: int | None = None) -> pd.DataFrame:
+    """Return ESPN's weekly projections using this league's scoring settings."""
+    season = constants.SEASON if season is None else season
+    data = DataLoader(year=season, week=week)
+    payload = data.players_info()
+    if 'players' not in payload:
+        raise RuntimeError(f"ESPN returned no player data for season {season}, week {week}")
 
-    Args:
-        the_player: a player's full name, position, and team abbreviation (ex: Full Name|Pos|TM)
-        players: list of players to match on from ESPN using same format as the_player
-
-    Returns:
-        matching ESPN player ID
-    """
-
-    player_lookup = []
-    for p in players:
-        try:
-            pl_name = p['player']['fullName']
-            pl_pos = constants.POSITION_MAP[list(set(constants.POSITION_MAP) & set(p['player']['eligibleSlots']))[0]]
-            pl_team = constants.NFL_TEAM_MAP[p['player']['proTeamId']]
-            pl_lookup = f"{pl_name}|{pl_pos}|{pl_team}"
-        except (KeyError, IndexError):
+    positions = {1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'K', 16: 'DST'}
+    rows = []
+    for entry in payload['players']:
+        player = entry['player']
+        position = positions.get(player.get('defaultPositionId'))
+        if position is None:
             continue
-        player_lookup.append(pl_lookup)
+        projection = next((stat for stat in player.get('stats', [])
+                           if stat.get('seasonId') == season
+                           and stat.get('scoringPeriodId') == week
+                           and stat.get('statSourceId') == 1
+                           and stat.get('statSplitTypeId', 1) == 1), None)
+        if projection is None or projection.get('appliedTotal') is None:
+            continue
+        player_id = player['id']
+        name_key = re.sub(r'[^a-zA-Z0-9]', '', player['fullName'])
+        rows.append({
+            'id': f'{name_key}_{season}_{week:02d}',
+            'season': season,
+            'week': week,
+            'player': player['fullName'],
+            'espn_id': player_id,
+            'position': position,
+            'rec': projection.get('stats', {}).get('53', 0),
+            'fpts': projection['appliedTotal'],
+        })
 
-    calc = [difflib.SequenceMatcher(None, the_player, m).ratio() for m in player_lookup]
-    if max(calc) > 0.8:
-        match_idx = calc.index(max(calc))
-        return players[match_idx]['id']
-    else:
-        return None
-
-
-def get_week_projections(week: int) -> pd.DataFrame:
-    """Return Fantasy Pros projections for all positions"""
-
-    data = DataLoader()
-    players = data.players_info()['players']
-    positions = ['qb', 'rb', 'wr', 'te', 'k']
-
-    projections = pd.DataFrame()
-    for pos in positions:
-        url = f"https://www.fantasypros.com/nfl/projections/{pos}.php?scoring=HALF&week={week}"
-        # url = f"https://www.fantasypros.com/nfl/rankings/half-point-ppr-{pos}.php?scoring=HALF&week={week}"
-        df = pd.read_html(url)[0]
-
-        # drop multi index column
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.droplevel()
-
-        df['POSITION'] = pos.upper()
-        try:
-            df = df[['Player', 'FPTS', 'REC', 'POSITION']]
-        except:
-            df = df[['Player', 'FPTS', 'POSITION']]
-            df['REC'] = 0
-
-        # remove team from player name
-        if pos != 'dst':
-            df['TEAM'] = df.Player.str[-3:].str.strip()
-            df['Player'] = df['Player'].str[:-3]
-            df['Player'] = df['Player'].str.rstrip()
-
-        if pos == 'dst':
-            df['Player'] = df['Player'].str.split().str[-1] + ' DST'
-            df['TEAM'] = ''
-
-        projections = pd.concat([projections, df])
-
-    projections['season'] = constants.SEASON
-    projections['week'] = week
-    projections.columns = [c.lower() for c in projections.columns]
+    if not rows:
+        raise RuntimeError(
+            f"ESPN has no weekly projections for season {season}, week {week}. "
+            "Check that projections are available for the requested season and week."
+        )
+    projections = pd.DataFrame(rows)
     projections['fpts'] = pd.to_numeric(projections['fpts'], errors='coerce')
     projections['rec'] = pd.to_numeric(projections['rec'], errors='coerce').fillna(0)
     projections = projections.dropna(subset=['fpts'])
-
-    qb_mask = (projections.position == 'QB') & (projections.fpts > 10)
-    rb_mask = (projections.position == 'RB') & (projections.fpts > 5)
-    wr_mask = (projections.position == 'WR') & (projections.fpts > 5)
-    te_mask = (projections.position == 'TE') & (projections.fpts > 3)
-    k_mask = (projections.position == 'K') & (projections.fpts > 3)
-    projections = projections[qb_mask | rb_mask | wr_mask | te_mask | k_mask]
-
-    # match player to ESPN
-    projections['match_on'] = projections.player + '|' + projections.position + '|' + projections.team
-    projections['id'] = (projections.player.str.replace(r'[^a-zA-Z0-9]', '', regex=True)
-                         + '_' + projections.season.astype(str)
-                         + '_' + projections.week.astype(str).str.zfill(2))
-    if projections.empty:
-        projections['espn_id'] = pd.Series(dtype='Int64')
-        return projections
-
-    projections['espn_id'] = projections.apply(
-        lambda x: _match_player_to_espn(x['match_on'], players), axis=1
-    ).astype('Int64')
-
-    return projections[~projections.espn_id.isnull()]
+    if projections.empty or not (projections['fpts'] > 0).any():
+        raise RuntimeError(f"ESPN has no usable projections for season {season}, week {week}")
+    projections['espn_id'] = projections['espn_id'].astype('Int64')
+    return projections
 
 
 def query_projections_db(season: int,
@@ -183,13 +135,13 @@ def get_best_lineup(week_data: dict,
                     team_id: int,
                     use_actuals: bool = True) -> dict:
     """
-    Calculate a team's best lineup using projections from Fantasy Pros
+    Calculate a team's best lineup using projections from ESPN
 
     Args:
         week_data: ESPN data for the selected week
         params: league settings from class
         rosters: roster settings from class
-        projections: data from Fantasy Pros
+        projections: data from ESPN
         week: current NFL week
         team_id: team to calculate lineup for
         replacement_players: average of top free agents if team cannot field a full lineup
@@ -363,7 +315,7 @@ def simulate_matchup(week_data: DataLoader,
         replacement_players: average of top free agents if team cannot field a full lineup
         week: week of matchup to simulate
         matchups: matchups for the selected week
-        projections: Fantasy Pros projections for the selected week
+        projections: ESPN projections for the selected week
 
     Returns:
         game id, team, simulated score, and simulated result for each team

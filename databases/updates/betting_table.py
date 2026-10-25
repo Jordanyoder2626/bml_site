@@ -29,19 +29,8 @@ def _db_probability(value: float) -> float:
 def _load_projections(season: int, week: int) -> list[dict]:
     projections_df = simulations.query_projections_db(season=season, week=week)
     if projections_df.empty:
-        projections_df = simulations.get_week_projections(week=week)
-        projections_df.columns = [
-            'name',
-            'projection',
-            'position',
-            'receptions',
-            'team',
-            'season',
-            'week',
-            'match_on',
-            'id',
-            'espn_id'
-        ]
+        projections_df = simulations.get_week_projections(week=week, season=season)
+        projections_df = projections_df.rename(columns={'player': 'name', 'fpts': 'projection', 'rec': 'receptions'})
     return projections_df.to_dict(orient='records')
 
 

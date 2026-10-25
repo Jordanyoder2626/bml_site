@@ -196,19 +196,8 @@ def _playoff_context(data: DataLoader, params: Params, teams: Teams):
         if matchup['matchup_id'] in playoff_matchup_ids
     ]
 
-    projections_df = simulations.get_week_projections(week=params.current_week)
-    projections_df.columns = [
-        'name',
-        'projection',
-        'position',
-        'receptions',
-        'team',
-        'season',
-        'week',
-        'match_on',
-        'id',
-        'espn_id'
-    ]
+    projections_df = simulations.get_week_projections(week=params.current_week, season=data.year)
+    projections_df = projections_df.rename(columns={'player': 'name', 'fpts': 'projection', 'rec': 'receptions'})
 
     return week_data, playoff_matchups, projections_df.to_dict(orient='records')
 

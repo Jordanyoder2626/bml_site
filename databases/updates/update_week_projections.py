@@ -33,16 +33,16 @@ def _upsert_query():
     """
 
 
-def _projection_rows(week):
-    data = get_week_projections(week=week)
+def _projection_rows(week, season=None):
+    data = get_week_projections(week=week, season=season)
     data = data[['id', 'season', 'week', 'player', 'espn_id', 'position', 'rec', 'fpts']]
     data.columns = ['id', 'season', 'week', 'name', 'espn_id', 'position', 'receptions', 'projection']
 
     return data
 
 
-def _upsert_projections(cursor, week):
-    data = _projection_rows(week=week)
+def _upsert_projections(cursor, week, season=None):
+    data = _projection_rows(week=week, season=season)
     query = _upsert_query()
 
     for _, row in data.iterrows():
@@ -94,7 +94,7 @@ def update_week(season: int, week: int, update_actuals: bool = True) -> int:
 
     with Database() as conn:
         cursor = conn.cursor()
-        row_count = _upsert_projections(cursor=cursor, week=week)
+        row_count = _upsert_projections(cursor=cursor, week=week, season=season)
         if update_actuals:
             _update_actuals(
                 cursor=cursor,
