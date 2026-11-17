@@ -77,6 +77,17 @@ def export_static(output_dir: Path, clean: bool = True) -> None:
                 encoding="utf-8",
             )
 
+        response = client.get('/playoff-leverage.png')
+        if response.status_code != 200:
+            raise RuntimeError(f'Could not export playoff leverage: HTTP {response.status_code}')
+        (output_dir / 'playoff-leverage.png').write_bytes(response.data)
+
+        response = client.get('/bootyman-leverage.png')
+        if response.status_code == 200:
+            (output_dir / 'bootyman-leverage.png').write_bytes(response.data)
+        elif response.status_code != 404:
+            raise RuntimeError(f'Could not export Bootyman leverage: HTTP {response.status_code}')
+
     shutil.copytree("static", output_dir / "static", dirs_exist_ok=True)
     shutil.copytree("logos", output_dir / "logos", dirs_exist_ok=True)
     if Path("efficiency").exists():

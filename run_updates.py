@@ -35,7 +35,8 @@ def _parse_args() -> argparse.Namespace:
         '--week', type=int, choices=range(1, 19), default=constants.CURRENT_WEEK,
         help='Week to publish (1-18); completed results refresh the previous week.'
     )
-    parser.add_argument('--n-sims', type=int, default=1000)
+    parser.add_argument('--n-sims', type=int, default=1000,
+                        help='Positive simulation count for betting and season/playoff odds.')
     parser.add_argument(
         '--refresh-betting-projections',
         action='store_true',
@@ -363,6 +364,9 @@ def _run_step(name: str, fn: Callable[[], None], continue_on_error: bool) -> Non
 def main() -> None:
     args = _parse_args()
     constants.SEASON = args.season
+    if args.n_sims < 1:
+        raise ValueError('--n-sims must be positive')
+    update_season_sims.N_SIMS = args.n_sims
     constants.CURRENT_WEEK = args.week
 
     data = DataLoader(year=args.season)

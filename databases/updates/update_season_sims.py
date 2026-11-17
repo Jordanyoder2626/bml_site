@@ -6,6 +6,7 @@ from scripts.utils.database import Database
 from scripts.utils import constants
 from scripts.utils import league_rules
 from scripts.simulations import simulations
+from scripts.simulations.leverage_odds import write_odds
 
 import math
 import time
@@ -358,6 +359,15 @@ def _sim_one_iteration(
         for record in ordered_records
     }
 
+    bootyman_teams = {
+        record['team'] for record in league_rules.order_bootyman_standings(
+            records=[
+                {'team': team, 'wins': values['total_wins'], 'score': values['total_points']}
+                for team, values in sim_data.items()
+            ]
+        )[:2]
+    }
+
     for index, (team, values) in enumerate(sim_data_standings.items()):
         values['ranks'] = index + 1
 
@@ -416,6 +426,8 @@ def _sim_one_iteration(
 
     for team in team_names:
         sim_results[team]['ranks'] += sim_data[team]['ranks']
+        sim_results[team]['current_week_result'] = sim_data[team]['current_week_result']
+        sim_results[team]['bootyman'] = int(team in bootyman_teams)
         sim_results[team]['matchup_wins'] += sim_data[team]['matchup_wins']
         sim_results[team]['tophalf_wins'] += sim_data[team]['tophalf_wins']
         sim_results[team]['total_wins'] += sim_data[team]['total_wins']
@@ -658,6 +670,13 @@ def run_week(sim_week: int) -> None:
         wins_prob_df=wins_prob_df,
         ranks_prob_df=ranks_prob_df
     )
+
+    if params.current_week <= params.regular_season_end:
+        output = write_odds(all_sim_results, team_names, constants.SEASON, params.current_week)
+        print(f'  Saved conditional playoff odds to {output}')
+        output = write_odds(all_sim_results, team_names, constants.SEASON,
+                            params.current_week, metric='bootyman')
+        print(f'  Saved conditional Bootyman Bowl odds to {output}')
 
     end = time.perf_counter()
     print(f"  Finished week {sim_week} in {end - start:.2f} seconds")

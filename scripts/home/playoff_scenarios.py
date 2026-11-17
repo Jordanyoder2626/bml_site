@@ -140,6 +140,14 @@ class PlayoffScenarios:
         games_played = standings[0]['wins'] + standings[0]['losses']
         weeks_left = self.params.regular_season_end - games_played
 
+        if seed == 3:
+            statuses = {
+                row['team']: league_rules.bye_status(standings, row['team'], weeks_left)
+                for row in standings
+            }
+            return ([team for team, status in statuses.items() if status == 'c'],
+                    [team for team, status in statuses.items() if status == 'x'])
+
         clinched = {}
         eliminated = {}
         clinch_idx = min(seed, len(standings) - 1)

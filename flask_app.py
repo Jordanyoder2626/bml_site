@@ -1,4 +1,7 @@
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, render_template, send_from_directory, send_file, abort
+from io import BytesIO
+from pathlib import Path
+from threading import Lock
 from flask_fontawesome import FontAwesome
 
 import scripts.utils.utils as ut
@@ -9,6 +12,10 @@ from scripts.records.transaction_records import (
     transaction_counter_records,
 )
 from scripts.utils.constants import STANDINGS_COLUMNS_FLASK, RECORDS_COLUMNS_FLASK, ALLTIME_COLUMNS_FLASK
+from scripts.utils.constants import SEASON
+from scripts.simulations.playoff_leverage import load_rows, render_chart
+from scripts.simulations.leverage_odds import odds_path
+from scripts.utils.league_rules import eliminated_from_postseason
 
 
 # create flask app
@@ -18,6 +25,26 @@ transaction_vault_cache = None
 favorite_players_cache = None
 transaction_vault_page_cache = None
 transaction_counter_cache = None
+playoff_leverage_lock = Lock()
+playoff_leverage_example = Path(app.root_path) / 'scripts/simulations/playoff_leverage.example.csv'
+
+
+def _playoff_leverage_csv():
+    return odds_path(SEASON, params.current_week, root=app.root_path)
+
+
+def _bootyman_leverage_csv():
+    return odds_path(SEASON, params.current_week, root=app.root_path, metric='bootyman')
+
+
+def _graph_eliminated_teams(bootyman=False):
+    records = [
+        {'team': row.team, 'wins': row.overall_wins, 'score': row.total_points}
+        for row in standings_df.itertuples()
+    ]
+    return {row['team'] for row in records if eliminated_from_postseason(
+        records, row['team'], params.weeks_left, bootyman=bootyman
+    )}
 
 ###########################
 # Flask routes
@@ -67,8 +94,54 @@ def home():
         is_playoff_week=is_playoff_week,
         east_division_team_names=EAST_DIVISION_TEAM_NAMES,
         show_bootyman_status=show_bootyman_status,
-        postseason_home=postseason_home
+        postseason_home=postseason_home,
+        playoff_leverage_demo=not _playoff_leverage_csv().is_file(),
+        bootyman_leverage_available=_bootyman_leverage_csv().is_file()
     )
+
+@app.route('/playoff-leverage.png')
+def playoff_leverage_image():
+    playoff_leverage_csv = _playoff_leverage_csv()
+    is_demo = not playoff_leverage_csv.is_file()
+    rows = load_rows(playoff_leverage_example if is_demo else playoff_leverage_csv)
+    note = 'Fictional example data - design preview only.'
+    if not is_demo:
+        note = (
+            f'Based on {int(rows[0]["simulations"]):,} season simulations. '
+            'Conditional odds use simulated head-to-head results. N/A = no samples.'
+        )
+    image = BytesIO()
+    # Matplotlib rendering uses shared state, so serialize concurrent requests.
+    with playoff_leverage_lock:
+        render_chart(
+            rows, image, SEASON, params.current_week,
+            title=None,
+            note=note,
+            eliminated_teams=_graph_eliminated_teams() if not is_demo else (),
+        )
+    image.seek(0)
+    return send_file(image, mimetype='image/png', max_age=0)
+
+@app.route('/bootyman-leverage.png')
+def bootyman_leverage_image():
+    source = _bootyman_leverage_csv()
+    if not source.is_file():
+        abort(404)
+    rows = load_rows(source)
+    image = BytesIO()
+    with playoff_leverage_lock:
+        render_chart(
+            rows, image, SEASON, params.current_week,
+            title=None, probability_name='Bootyman Bowl',
+            loss_on_right=True,
+            eliminated_teams=_graph_eliminated_teams(bootyman=True),
+            eliminated_label='Escaped',
+            note=(f'Based on {int(rows[0]["simulations"]):,} season simulations. '
+                  'Bottom two by record, then points. N/A = no samples.'),
+        )
+    image.seek(0)
+    return send_file(image, mimetype='image/png', max_age=0)
+
 
 @app.route("/power-rankings/")
 def power_rankings():

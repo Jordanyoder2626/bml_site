@@ -345,6 +345,7 @@
     <table class="table table-hover center content-table standings" style="margin-left: auto; margin-right: auto; width:60%">
         <caption>
             GB-Games back of bye or playoff seed <br>
+            Bye GB uses the closer route: a division title or the final bye seed <br>
             Seeds 1-2 are division winners; seed 3 gets the final bye; seeds 4-5 play in <br>
             c-Clinched bye, playoff spot, or Bootyman Bowl <br>
             x-Eliminated from bye or playoff spot <br>
@@ -371,6 +372,26 @@
         {% endfor %}
         </tbody>
     </table>
+</div>
+<div class="home-odds-grid">
+<section class="home-odds-chart" aria-labelledby="playoff-leverage-heading">
+    <h1 id="playoff-leverage-heading">Playoff Leverage</h1>
+    <p>Playoff odds entering Week {{ current_week }}, with the impact of a win or loss.</p>
+    <img src="{{ url_for('playoff_leverage_image') }}"
+         alt="Playoff leverage chart showing current playoff probability and conditional probability after a win or loss."
+         loading="lazy">
+</section>
+<section class="home-odds-chart" aria-labelledby="bootyman-leverage-heading">
+    <h1 id="bootyman-leverage-heading">Bootyman Bowl Odds</h1>
+    <p>Bootyman Bowl risk entering Week {{ current_week }}, with the impact of a win or loss.</p>
+    {% if bootyman_leverage_available %}
+    <img src="{{ url_for('bootyman_leverage_image') }}"
+         alt="Bootyman Bowl odds, including conditional odds after a win or loss."
+         loading="lazy">
+    {% else %}
+    <p>Run the weekly season update to generate Bootyman Bowl odds for Week {{ current_week }}.</p>
+    {% endif %}
+</section>
 </div>
 </main>
 {% endblock %}

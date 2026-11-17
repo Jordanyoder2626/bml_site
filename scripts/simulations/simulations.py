@@ -649,6 +649,7 @@ def simulate_season(params: Params,
                     team_names: list[str] = None):
     """Simulate a full regular season"""
     all_weeks = []
+    current_week_results = {}
     for week, team_lineups in lineups.items():
         if week <= params.regular_season_end:
             matchups = [m for m in teams.matchups['schedule'] if m['matchupPeriodId'] == week]
@@ -698,6 +699,10 @@ def simulate_season(params: Params,
                     team_result['tophalf_result'] = 0
                 team_result['total_wins'] = team_result['matchup_result'] + team_result['tophalf_result']
             all_weeks.append(matchup_sim)
+            if week == params.current_week:
+                current_week_results = {
+                    result['team']: result['matchup_result'] for result in matchup_sim
+                }
 
     season_sim_dict = {}
     for team in team_names:
@@ -713,6 +718,7 @@ def simulate_season(params: Params,
             team_m_wins += team_data[0]['matchup_result']
             team_th_wins += team_data[0]['tophalf_result']
         season_sim_dict[team] = {
+            'current_week_result': current_week_results.get(team),
             'matchup_wins': team_m_wins,
             'tophalf_wins': team_th_wins,
             'total_wins': team_m_wins,

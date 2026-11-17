@@ -64,27 +64,20 @@ class Standings:
         """
         return f'{value:,.2f}'
 
-    def _clinch_bye(self,
-                    row: pd.Series,
-                    fourth_seed_wins: float) -> int | None:
+    def _clinch_bye(self, row: pd.Series) -> float:
         """
         Calculate if a team clinched playoff BYE week (top 3 seed)
         """
-        weeks_ahead = (row.overall_wins - fourth_seed_wins)
         weeks_behind = row['wb2']
-
-        if self.week - 1 <= self.params.regular_season_end:
-
-            if weeks_ahead > self.params.weeks_left:
-                return constants.CLINCHED
-
-            elif weeks_behind > self.params.weeks_left:
-                return constants.ELIMINATED
-
-            else:
-                return weeks_behind
-
-        return None
+        status = league_rules.bye_status(
+            self.standings_df.to_dict(orient='records'), row.team,
+            self.params.weeks_left, wins_key='overall_wins', points_key='total_points'
+        )
+        if status == 'c':
+            return constants.CLINCHED
+        if status == 'x':
+            return constants.ELIMINATED
+        return weeks_behind
 
     def _clinch_playoff(self,
                         row: pd.Series,
@@ -795,15 +788,15 @@ class Standings:
             self.standings_df['wb5_disp'] = '-'
             return self.standings_df.reset_index(drop=True)
 
-        bye_seed_wins = self.standings_df.iloc[2].overall_wins
         five_seed_wins = self.standings_df.iloc[4].overall_wins
 
-        fourth_seed_wins = self.standings_df.iloc[3].overall_wins
         sixth_wins = self.standings_df.iloc[5].overall_wins if len(self.standings_df) > 5 else 0
 
-        self.standings_df['wb2'] = (
-            bye_seed_wins
-            - self.standings_df.overall_wins
+        bye_records = self.standings_df.to_dict(orient='records')
+        self.standings_df['wb2'] = self.standings_df.team.map(
+            lambda team: league_rules.bye_games_back(
+                bye_records, team, wins_key='overall_wins', points_key='total_points'
+            )
         )
 
         self.standings_df['wb5'] = (
@@ -819,10 +812,7 @@ class Standings:
 
         self.standings_df['wb2'] = (
             self.standings_df.apply(
-                lambda x: self._clinch_bye(
-                    x,
-                    fourth_seed_wins=fourth_seed_wins
-                ),
+                lambda x: self._clinch_bye(x),
                 axis=1
             )
         )
