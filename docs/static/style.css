@@ -150,14 +150,35 @@ html {
   margin-right: auto;
 }
 
-.home-page h1:first-of-type {
+.home-odds-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+  width: min(1180px, calc(100% - 48px));
+  margin: 3rem auto 2rem;
+  align-items: start;
+}
+
+.home-odds-chart {
+  min-width: 0;
+  text-align: center;
+}
+
+.home-odds-chart img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+.home-page > h1:first-of-type {
   font-size: 5.25rem;
   line-height: 0.95;
   padding-bottom: 14px;
   position: relative;
 }
 
-.home-page h1:first-of-type::after {
+.home-page > h1:first-of-type::after {
   background-color: #0EB04B;
   border-radius: 999px;
   bottom: 0;
