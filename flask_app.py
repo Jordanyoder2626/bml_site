@@ -15,7 +15,6 @@ from scripts.utils.constants import STANDINGS_COLUMNS_FLASK, RECORDS_COLUMNS_FLA
 from scripts.utils.constants import SEASON
 from scripts.simulations.playoff_leverage import load_rows, render_chart
 from scripts.simulations.leverage_odds import odds_path
-from scripts.utils.league_rules import eliminated_from_postseason
 
 
 # create flask app
@@ -38,13 +37,7 @@ def _bootyman_leverage_csv():
 
 
 def _graph_eliminated_teams(bootyman=False):
-    records = [
-        {'team': row.team, 'wins': row.overall_wins, 'score': row.total_points}
-        for row in standings_df.itertuples()
-    ]
-    return {row['team'] for row in records if eliminated_from_postseason(
-        records, row['team'], params.weeks_left, bootyman=bootyman
-    )}
+    return set(escaped_bootyman_teams if bootyman else playoff_eliminated)
 
 ###########################
 # Flask routes
@@ -66,15 +59,6 @@ def home():
     data_current = ut.flask_get_data(current_week_matchup_rows)
 
     show_scenarios = params.current_week <= params.regular_season_end
-    scenario_cols = ['Scenario', 'Probability']
-    headings_cl = tuple(scenario_cols) if show_scenarios and clinches['clinches'] else tuple()
-    data_cl = ut.flask_get_data(clinches['clinches']) if show_scenarios and clinches['clinches'] else tuple()
-
-    headings_el = tuple(scenario_cols) if show_scenarios and clinches['eliminations'] else tuple()
-    data_el = ut.flask_get_data(clinches['eliminations']) if show_scenarios and clinches['eliminations'] else tuple()
-
-    headings_bb = tuple(scenario_cols) if show_scenarios and clinches['bootyman'] else tuple()
-    data_bb = ut.flask_get_data(clinches['bootyman']) if show_scenarios and clinches['bootyman'] else tuple()
 
     return render_template(
         "home.html", week=week_str,
@@ -82,9 +66,9 @@ def home():
         data_prev=data_prev,
         data_current=data_current,
         tstamp_bets=timestamp_betting,
-        headings_cl=headings_cl, data_cl=data_cl,
-        headings_el=headings_el, data_el=data_el,
-        headings_bb=headings_bb, data_bb=data_bb,
+        data_cl=clinches['clinches'] if show_scenarios else (),
+        data_el=clinches['eliminations'] if show_scenarios else (),
+        data_bb=clinches['bootyman'] if show_scenarios else (),
         previous_week=previous_week,
         current_week=params.current_week,
         previous_week_low_score=previous_week_low_score,
@@ -118,6 +102,8 @@ def playoff_leverage_image():
             title=None,
             note=note,
             eliminated_teams=_graph_eliminated_teams() if not is_demo else (),
+            clinched_teams=playoff_clinched if not is_demo else (),
+            standings_order=(row['team'] for row in standings_seed_rows),
         )
     image.seek(0)
     return send_file(image, mimetype='image/png', max_age=0)
@@ -136,6 +122,8 @@ def bootyman_leverage_image():
             loss_on_right=True,
             eliminated_teams=_graph_eliminated_teams(bootyman=True),
             eliminated_label='Escaped',
+            clinched_teams=clinched_bootyman_teams,
+            standings_order=(row['team'] for row in standings_seed_rows),
             note=(f'Based on {int(rows[0]["simulations"]):,} season simulations. '
                   'Bottom two by record, then points. N/A = no samples.'),
         )

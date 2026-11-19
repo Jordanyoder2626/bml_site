@@ -86,8 +86,19 @@ def load_rows(csv_path):
 
 def render_chart(rows, output, season, week, title='BML Playoff Leverage', note='',
                  probability_name='Playoff', loss_on_right=False, eliminated_teams=(),
-                 eliminated_label='Eliminated'):
+                 eliminated_label='Eliminated', clinched_teams=(), standings_order=()):
     """Place each team at its current odds, with tapered conditional ranges."""
+    clinched_teams = set(clinched_teams)
+    eliminated_teams = set(eliminated_teams)
+    standing_rank = {team: index for index, team in enumerate(standings_order)}
+
+    def row_order(row):
+        team = row['team']
+        if team in clinched_teams:
+            return 0, standing_rank.get(team, len(standing_rank))
+        return (2 if team in eliminated_teams else 1), 0
+
+    rows = sorted(rows, key=row_order)
     fig, ax = plt.subplots(figsize=(11, max(6, len(rows) * .40 + (3 if title else 2))))
     fig.patch.set_facecolor(BACKGROUND)
     ax.set_facecolor(BACKGROUND)
@@ -103,11 +114,13 @@ def render_chart(rows, output, season, week, title='BML Playoff Leverage', note=
         y = len(rows) - index - 1
         current, loss, win = (row[key] for key in ('current', 'if_loss', 'if_win'))
         eliminated = row['team'] in eliminated_teams
-        if eliminated:
-            current = 0
+        clinched = row['team'] in clinched_teams
+        settled = clinched or eliminated
+        if settled:
+            current = 100 if clinched else 0
         color = row['color']
         # Draw each arm independently: conditional sample estimates can cross.
-        for endpoint in (() if eliminated else (loss, win)):
+        for endpoint in (() if settled else (loss, win)):
             if endpoint is None:
                 continue
             ax.add_patch(Polygon([(current, y), (endpoint, y + .14),
@@ -120,15 +133,15 @@ def render_chart(rows, output, season, week, title='BML Playoff Leverage', note=
         if loss is not None and win is not None and loss != win:
             loss_right = loss > win
         endpoints = [current] + [value for value in (loss, win) if value is not None]
-        labels = () if eliminated else ((loss, LOSS, loss_right), (win, WIN, not loss_right))
-        for value, color, on_right in labels:
+        labels = () if settled else ((loss, LOSS, loss_right), (win, WIN, not loss_right))
+        for value, label_color, on_right in labels:
             anchor = max(endpoints) if on_right else min(endpoints)
             # Leave space for the circular logo when the range is very narrow.
             padding = 22 if abs(anchor - current) < 3 else 9
             ax.annotate(probability_label(value), (anchor, y),
                         xytext=(padding if on_right else -padding, 0),
                         textcoords='offset points', ha='left' if on_right else 'right',
-                        va='center', color=color, fontsize=11, zorder=5)
+                        va='center', color=label_color, fontsize=11, zorder=5)
         if row['logo']:
             pixels = circular_logo(row['logo'])
             marker = OffsetImage(pixels, zoom=32 / pixels.shape[0])
@@ -138,10 +151,19 @@ def render_chart(rows, output, season, week, title='BML Playoff Leverage', note=
                        edgecolor=color, linewidth=1.2, zorder=4)
             ax.text(current, y, row['team'][:2].upper(), ha='center', va='center',
                     fontsize=9, weight='bold', color=color, zorder=5)
-        if eliminated:
-            ax.annotate(eliminated_label, (current, y), xytext=(23, 0),
-                        textcoords='offset points', ha='left', va='center',
-                        fontsize=11, color='#666666', zorder=5)
+        if settled:
+            label = 'Clinched' if clinched else eliminated_label
+            foreground, background = (
+                ('#235849', '#dcebe5') if clinched or label == 'Escaped'
+                else ('#525b63', '#e3e6e8')
+            )
+            ax.annotate(
+                label, (current, y), xytext=(-23 if clinched else 23, 0),
+                textcoords='offset points', ha='right' if clinched else 'left',
+                va='center', fontsize=10, weight='semibold', color=foreground,
+                bbox={'boxstyle': 'round,pad=0.35', 'facecolor': background, 'edgecolor': 'none'},
+                zorder=5,
+            )
 
     # The legend uses the same geometry as the plotted teams.
     y = -1.8

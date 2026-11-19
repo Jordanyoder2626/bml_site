@@ -1,5 +1,5 @@
 import json
-from html import escape
+from itertools import combinations
 from pathlib import Path
 from datetime import datetime as dt
 
@@ -147,331 +147,102 @@ def display_team_list_rows(rows: list[list]) -> list[list]:
     ]
 
 
-def _display_team_series(names: str) -> str:
-    teams = [
-        display_team_name(name.strip())
-        for name in str(names).split(',')
-        if name.strip()
-    ]
+def _scenario_conditions(outcomes: list[dict], matchups: list[tuple[str, str]]) -> list[tuple]:
+    conditions = {
+        tuple(outcome['matchup'][home] for home, _ in matchups)
+        for outcome in outcomes
+    }
+    simplified = set()
+    while conditions:
+        merged = set()
+        for condition in conditions:
+            combined = False
+            for index, result in enumerate(condition):
+                if result is None:
+                    continue
+                opposite = condition[:index] + (1 - result,) + condition[index + 1:]
+                if opposite in conditions:
+                    merged.add(condition[:index] + (None,) + condition[index + 1:])
+                    combined = True
+            if not combined:
+                simplified.add(condition)
+        conditions = merged
 
-    if len(teams) <= 1:
-        return teams[0] if teams else ''
-    if len(teams) == 2:
-        return ' or '.join(teams)
-    return f'{", ".join(teams[:-1])}, or {teams[-1]}'
-
-
-def _display_team_or_series(teams: list[str]) -> str:
-    display_teams = [display_team_name(team) for team in teams]
-
-    if len(display_teams) <= 1:
-        return display_teams[0] if display_teams else ''
-    if len(display_teams) == 2:
-        return ' or '.join(display_teams)
-    return f'{", ".join(display_teams[:-1])}, or {display_teams[-1]}'
-
-
-def _net_result_phrase(net_wins: int, other_teams: str, scenario_type: str) -> str:
-    team_count = len([
-        team
-        for team in str(other_teams).split(',')
-        if team.strip()
-    ])
-    other_teams = _display_team_series(other_teams)
-    loss_phrase = 'a loss by' if team_count <= 1 else 'losses by'
-    win_phrase = 'a win by' if team_count <= 1 else 'wins by'
-    loses_verb = 'loses' if team_count <= 1 else 'lose'
-    wins_verb = 'wins' if team_count <= 1 else 'win'
-
-    if scenario_type == 'clinch':
-        if net_wins >= 1:
-            return f'with a win plus {loss_phrase} {other_teams}'
-        if net_wins == 0:
-            return f'by matching or better than {other_teams}'
-        return f'with a loss if {other_teams} {wins_verb}'
-
-    if net_wins >= 1:
-        return f'even with a win if {other_teams} {loses_verb}'
-    if net_wins == 0:
-        return f'by matching or worse than {other_teams}'
-    return f'with a loss plus {win_phrase} {other_teams}'
+    return sorted(simplified, key=lambda condition: tuple(
+        -1 if result is None else result for result in condition
+    ))
 
 
-def _visible_probability(probability: str) -> bool:
-    return str(probability).strip() != '0.0%'
+def _join_scenario_results(results: frozenset[str]) -> str:
+    return ' and '.join(sorted(results, key=lambda result: (
+        result not in ('a win', 'a loss'), result
+    )))
 
 
-def _team_verb(team_name: str, singular: str, plural: str) -> str:
-    return plural if team_name.endswith('s') else singular
-
-
-def _format_threshold_phrases(display_team: str,
-                              thresholds: list[dict],
-                              scenario_type: str) -> list[str]:
-    phrases = []
-
-    for threshold in thresholds:
-        other_team = display_team_name(threshold['team'])
-        points = f"{float(threshold['points']):.2f}"
-
-        if threshold['direction'] == 'other_needs':
-            if scenario_type == 'clinch':
-                phrase = (
-                    f'{display_team} must not get outscored by '
-                    f'{other_team} (+{points})'
-                )
-            else:
-                phrase = (
-                    f'{other_team} needs +{points} vs {display_team} '
-                    f'to keep them out'
-                )
-        else:
-            if scenario_type == 'clinch':
-                phrase = f'{display_team} must outscore {other_team} (+{points})'
-            else:
-                phrase = f'{display_team} needs +{points} vs {other_team} to pass'
-
-        phrases.append(phrase)
-
-    return phrases
-
-
-def _format_tiebreaker_sentence(team: str,
-                                metadata: dict | None,
-                                scenario_type: str) -> str:
-    if not metadata:
-        return ''
-
-    if metadata.get('type') != 'final_week_playoff_tiebreaker':
-        return ''
-
-    thresholds = metadata.get('thresholds', [])
-    if not thresholds:
-        return ''
-
-    team_count = len(thresholds)
-    display_team = display_team_name(team)
-    other_teams = _display_team_or_series([
-        threshold['team']
-        for threshold in thresholds
-    ])
-    loses_verb = 'loses' if team_count <= 1 else 'lose'
-    wins_verb = 'wins' if team_count <= 1 else 'win'
-    phrases = _format_threshold_phrases(
-        display_team=display_team,
-        thresholds=thresholds,
-        scenario_type=scenario_type
-    )
-
-    if len(phrases) == 1:
-        threshold_text = phrases[0]
-    else:
-        threshold_text = '; '.join(phrases)
-
-    if scenario_type == 'clinch':
-        return (
-            f' If {display_team} loses and {other_teams} {wins_verb}: '
-            f'{threshold_text}.'
-        )
-
-    return (
-        f' If {display_team} wins and {other_teams} {loses_verb}: '
-        f'{threshold_text}.'
-    )
-
-
-def _format_bootyman_threshold_phrases(display_team: str,
-                                       thresholds: list[dict],
-                                       scenario_type: str) -> list[str]:
-    phrases = []
-
-    for threshold in thresholds:
-        other_team = display_team_name(threshold['team'])
-        points = f"{float(threshold['points']):.2f}"
-
-        if threshold['direction'] == 'other_needs':
-            if scenario_type == 'escape':
-                phrase = (
-                    f'{display_team} must not get outscored by '
-                    f'{other_team} (+{points})'
-                )
-            else:
-                phrase = (
-                    f'{other_team} needs +{points} vs {display_team} '
-                    f'to push them in'
-                )
-        else:
-            if scenario_type == 'escape':
-                phrase = f'{display_team} must outscore {other_team} (+{points})'
-            else:
-                phrase = (
-                    f'{display_team} must outscore {other_team} (+{points}) '
-                    f'to avoid it'
-                )
-
-        phrases.append(phrase)
-
-    return phrases
-
-
-def _format_bootyman_tiebreaker_sentence(team: str,
-                                         metadata: dict | None,
-                                         scenario_type: str) -> str:
-    if not metadata:
-        return ''
-
-    if metadata.get('type') != 'final_week_bootyman_tiebreaker':
-        return ''
-
-    thresholds = metadata.get('thresholds', [])
-    if not thresholds:
-        return ''
-
-    team_count = len(thresholds)
-    display_team = display_team_name(team)
-    other_teams = _display_team_or_series([
-        threshold['team']
-        for threshold in thresholds
-    ])
-    wins_verb = 'wins' if team_count <= 1 else 'win'
-    loses_verb = 'loses' if team_count <= 1 else 'lose'
-    threshold_text = '; '.join(
-        _format_bootyman_threshold_phrases(
-            display_team=display_team,
-            thresholds=thresholds,
-            scenario_type=scenario_type
-        )
-    )
-
-    if scenario_type == 'escape':
-        return (
-            f' If {display_team} loses and {other_teams} {wins_verb}: '
-            f'{threshold_text}.'
-        )
-
-    return (
-        f' If {display_team} wins and {other_teams} {loses_verb}: '
-        f'{threshold_text}.'
-    )
-
-
-def format_scenario_statements(rows: list[list], scenario_type: str) -> list[list]:
-    formatted_rows = []
-
-    for row in rows:
-        if len(row) < 5:
+def _scenario_result_choices(alternatives: set[frozenset[str]]) -> list[str]:
+    choices = []
+    win_prefix = 'a win by '
+    for size in sorted({len(group) for group in alternatives}):
+        groups = {group for group in alternatives if len(group) == size}
+        shared = frozenset.intersection(*groups)
+        if len(groups) == 1:
+            choices.append(_join_scenario_results(shared))
             continue
 
-        team, target, net_wins, other_teams = row[:4]
-        metadata = row[4] if len(row) > 5 and isinstance(row[4], dict) else None
-        probability = row[5] if metadata else row[4]
-        if not _visible_probability(probability):
-            continue
+        remaining = {group - shared for group in groups}
+        results = set().union(*remaining)
+        needed = size - len(shared)
+        if (
+            all(result.startswith(win_prefix) for result in results)
+            and remaining == {frozenset(group) for group in combinations(results, needed)}
+        ):
+            teams = sorted(result.removeprefix(win_prefix) for result in results)
+            if needed == 1 and len(teams) == 2:
+                choice = f'a win by either {teams[0]} or {teams[1]}'
+            elif needed == 1:
+                choice = f'a win by any of {", ".join(teams[:-1])}, or {teams[-1]}'
+            else:
+                choice = f'wins by any {needed} of {", ".join(teams[:-1])}, and {teams[-1]}'
+            if shared:
+                choice = f'{_join_scenario_results(shared)} and {choice}'
+            choices.append(choice)
+        else:
+            choices.extend(sorted(_join_scenario_results(group) for group in groups))
+    return choices
 
-        display_team = display_team_name(team)
-        verb = (
-            _team_verb(display_team, 'clinches', 'clinch')
-            if scenario_type == 'clinch'
-            else _team_verb(display_team, 'is eliminated from', 'are eliminated from')
-        )
-        statement = (
-            f'{display_team} {verb} {str(target).lower()} '
-            f'{_net_result_phrase(int(net_wins), other_teams, scenario_type)}.'
-            f'{_format_tiebreaker_sentence(team, metadata, scenario_type)}'
-        )
-        formatted_rows.append([statement, probability])
 
-    return formatted_rows
-
-
-def format_bye_eliminations(bye_scenarios: dict, matchups: list[tuple[str, str]],
-                            final_week: bool) -> list[list]:
+def format_postseason_scenarios(scenarios: dict, matchups: list[tuple[str, str]],
+                                event: str, outcome_label: str) -> list[dict]:
     rows = []
-    for team, result in sorted(bye_scenarios.items()):
-        outcomes = result['elim_scenarios']
-        probability = format_prob(result['p_elim'])
-        if not outcomes or not matchups or not _visible_probability(probability):
+    for team, result in sorted(scenarios.items()):
+        outcomes = result[f'{event}_scenarios']
+        probability = format_prob(result[f'p_{event}'])
+        if not outcomes or not matchups or probability == '0.0%':
             continue
 
-        outcome_items = []
-        for outcome in outcomes:
-            wins = outcome['matchup']
-            winners = [
-                escape(display_team_name(home if wins[home] else away))
-                for home, away in matchups
-            ]
-            outcome_items.append(f'<li>{", ".join(winners)}</li>')
+        alternatives = set()
+        for condition in _scenario_conditions(outcomes, matchups):
+            results = []
+            for (home, away), result in zip(matchups, condition):
+                if result is None:
+                    continue
+                winner, loser = (home, away) if result else (away, home)
+                if team in (winner, loser):
+                    results.insert(0, 'a win' if team == winner else 'a loss')
+                else:
+                    results.append(f'a win by {display_team_name(winner)}')
+            alternatives.add(frozenset(results))
 
-        display_team = display_team_name(team)
-        verb = _team_verb(display_team, 'is', 'are')
-        summary = f'{escape(display_team)} {verb} eliminated from a bye with any listed set of winners'
-        if final_week:
-            summary += ' based on current points tiebreakers'
-        statement = (
-            f'<details><summary>{summary}.</summary>'
-            f'<ul>{"".join(outcome_items)}</ul></details>'
-        )
-        rows.append([statement, probability])
+        shared = frozenset.intersection(*alternatives)
+        choices = _scenario_result_choices({group - shared for group in alternatives})
+        rows.append({
+            'team': display_team_name(team),
+            'outcome': outcome_label,
+            'required': _join_scenario_results(shared),
+            'choices': [choice for choice in choices if choice],
+            'probability': probability,
+        })
     return rows
-
-
-def format_bootyman_scenario_statements(rows: list[list]) -> list[list]:
-    formatted_rows = []
-
-    for row in rows:
-        if len(row) < 6:
-            continue
-
-        team, _, net_wins, other_teams, bootyman_type = row[:5]
-        metadata = row[5] if len(row) > 6 and isinstance(row[5], dict) else None
-        probability = row[6] if metadata else row[5]
-        if not _visible_probability(probability):
-            continue
-
-        display_team = display_team_name(team)
-        other_team_count = len([
-            team_name
-            for team_name in str(other_teams).split(',')
-            if team_name.strip()
-        ])
-        other_teams = _display_team_series(other_teams)
-        loss_phrase = 'a loss by' if other_team_count <= 1 else 'losses by'
-        win_phrase = 'a win by' if other_team_count <= 1 else 'wins by'
-        loses_verb = 'loses' if other_team_count <= 1 else 'lose'
-        wins_verb = 'wins' if other_team_count <= 1 else 'win'
-
-        if bootyman_type == 'escape':
-            verb = _team_verb(display_team, 'escapes', 'escape')
-            if not other_teams:
-                condition = 'with a win' if int(net_wins) >= 1 else 'this week'
-            elif int(net_wins) >= 1:
-                condition = f'with a win plus {loss_phrase} {other_teams}'
-            elif int(net_wins) == 0:
-                condition = f'by matching or better than {other_teams}'
-            else:
-                condition = f'with a loss if {other_teams} {wins_verb}'
-            statement = (
-                f'{display_team} {verb} Bootyman Bowl {condition}.'
-                f'{_format_bootyman_tiebreaker_sentence(team, metadata, bootyman_type)}'
-            )
-        else:
-            verb = _team_verb(display_team, 'clinches', 'clinch')
-            if not other_teams:
-                condition = 'with a loss' if int(net_wins) < 0 else 'this week'
-            elif int(net_wins) >= 1:
-                condition = f'even with a win if {other_teams} {loses_verb}'
-            elif int(net_wins) == 0:
-                condition = f'by matching or worse than {other_teams}'
-            else:
-                condition = f'with a loss plus {win_phrase} {other_teams}'
-            statement = (
-                f'{display_team} {verb} Bootyman Bowl {condition}.'
-                f'{_format_bootyman_tiebreaker_sentence(team, metadata, bootyman_type)}'
-            )
-
-        formatted_rows.append([statement, probability])
-
-    return formatted_rows
 
 
 def _format_matchup_record(wins: int, losses: int, ties: int) -> str:
@@ -742,22 +513,20 @@ standings = Standings(season=season, week=standings_week)
 if params.current_week > params.regular_season_end:
     standings.params.as_of_week = params.regular_season_end
 standings_df = standings.format_standings()
-clinches = standings.clinching_scenarios()
 ps = PlayoffScenarios(data=data, params=params, teams=teams)
-bye_scens = ps.get_new_clinches(seed=3)
-playoff_scens = ps.get_new_clinches(seed=5)
-bootyman_scens = ps.get_new_bootyman_scenarios()
+bye_clinched, bye_eliminated = ps.get_teams(ps.standings, seed=3)
+playoff_clinched, playoff_eliminated = ps.get_teams(ps.standings, seed=5)
+clinched_bootyman_teams, escaped_bootyman_teams = ps.get_bootyman_status(ps.standings)
 magic_numbers = ps.get_magic_numbers()
-standings_df['bye_magic_number'] = standings_df['team'].map(lambda t: magic_numbers.get(t, {}).get('bye', None))
-standings_df['playoff_magic_number'] = standings_df['team'].map(lambda t: magic_numbers.get(t, {}).get('playoff', None))
-standings_df['bye_status'] = standings_df.apply(
-    lambda x: x.wb2_disp if x.wb2_disp in ['c', 'x'] else x.bye_magic_number,
-    axis=1
-)
-standings_df['playoff_status'] = standings_df.apply(
-    lambda x: x.wb5_disp if x.wb5_disp in ['c', 'x'] else x.playoff_magic_number,
-    axis=1
-)
+for category, clinched, eliminated in (
+    ('bye', bye_clinched, bye_eliminated),
+    ('playoff', playoff_clinched, playoff_eliminated),
+):
+    statuses = {team: 'c' for team in clinched}
+    statuses.update({team: 'x' for team in eliminated})
+    standings_df[f'{category}_status'] = standings_df['team'].map(
+        lambda team: statuses.get(team, magic_numbers.get(team, {}).get(category))
+    )
 
 bootyman_order = league_rules.order_bootyman_standings(
     records=standings_df.rename(
@@ -770,17 +539,6 @@ bootyman_order = league_rules.order_bootyman_standings(
     points_key='score'
 )
 bootyman_boundary_wins = bootyman_order[1]['wins'] if len(bootyman_order) > 1 else 0
-bootyman_clinch_boundary_wins = bootyman_order[2]['wins'] if len(bootyman_order) > 2 else 0
-escaped_bootyman_teams = {
-    row['team']
-    for row in bootyman_order
-    if row['wins'] - bootyman_boundary_wins > params.weeks_left
-}
-clinched_bootyman_teams = {
-    row['team']
-    for row in bootyman_order
-    if bootyman_clinch_boundary_wins - row['wins'] > params.weeks_left
-}
 show_bootyman_status = bool(escaped_bootyman_teams)
 
 
@@ -808,53 +566,26 @@ def format_prob(p):
     else:
         return f"{p*100:.1f}%"
 
-for s in clinches['clinches']:
-    if s[1] == 'Bye':
-        try:
-            prob = format_prob(bye_scens[s[0]]['p_clinch'])
-        except KeyError:
-            prob = f'0.0%'
-        s.extend([prob])
-    else:
-        try:
-            prob = format_prob(playoff_scens[s[0]]['p_clinch'])
-        except KeyError:
-            prob = f'0.0%'
-        s.extend([prob])
-
-for s in clinches['eliminations']:
-    prob = format_prob(playoff_scens.get(s[0], {}).get('p_elim', 0))
-    s.append(prob)
-# TODO: fix last week clinches/elims. for wild card, net wins and probability should be blank (or save all sims to get prob of team getting outscored by x pts)
-
-for s in clinches['bootyman']:
-    try:
-        if s[4] == 'escape':
-            prob = format_prob(bootyman_scens[s[0]]['p_escape'])
-        else:
-            prob = format_prob(bootyman_scens[s[0]]['p_clinch'])
-    except KeyError:
-        prob = f'0.0%'
-    s.extend([prob])
+bye_scens = ps.get_new_clinches(seed=3)
+playoff_scens = ps.get_new_clinches(seed=5)
+bootyman_scens = ps.get_new_bootyman_scenarios()
+clinches = {
+    'clinches': (
+        format_postseason_scenarios(bye_scens, ps.matchups, 'clinch', 'Clinches a bye')
+        + format_postseason_scenarios(playoff_scens, ps.matchups, 'clinch', 'Clinches a playoff spot')
+    ),
+    'eliminations': (
+        format_postseason_scenarios(bye_scens, ps.matchups, 'elim', 'Eliminated from bye contention')
+        + format_postseason_scenarios(playoff_scens, ps.matchups, 'elim', 'Eliminated from playoff contention')
+    ),
+    'bootyman': (
+        format_postseason_scenarios(bootyman_scens, ps.matchups, 'clinch', 'Clinches Bootyman Bowl')
+        + format_postseason_scenarios(bootyman_scens, ps.matchups, 'escape', 'Escapes Bootyman Bowl')
+    ),
+}
 
 standings_seed_rows = standings_df[['seed', 'team']].to_dict(orient='records')
 standings_df = display_team_values(standings_df, ['team'])
-clinches['clinches'] = format_scenario_statements(
-    clinches['clinches'],
-    scenario_type='clinch'
-)
-clinches['eliminations'] = format_scenario_statements(
-    clinches['eliminations'],
-    scenario_type='eliminate'
-)
-clinches['eliminations'].extend(format_bye_eliminations(
-    bye_scens,
-    ps.matchups,
-    final_week=params.current_week == params.regular_season_end
-))
-clinches['bootyman'] = format_bootyman_scenario_statements(
-    clinches['bootyman']
-)
 
 all_matchups = teams._fetch_matchups()
 # Key each directed result by season/week so refreshed scores replace stored

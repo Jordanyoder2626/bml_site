@@ -16,7 +16,8 @@ class PlayoffScenarios:
 
         self.standings = self._load_standings()
         self.betting_table = self._load_betting_table()
-        self.matchups = self._load_matchups()
+        self.schedule = self._load_schedule()
+        self.matchups = self.schedule.get(self.params.current_week, [])
         self.scenarios = self._get_scenarios()
 
     @staticmethod
@@ -40,7 +41,7 @@ class PlayoffScenarios:
         df = Database(
             table='matchups',
             season=self.season,
-            week=self.params.as_of_week
+            week=min(self.params.as_of_week, self.params.regular_season_end)
         ).retrieve_data(how='season')
         df = df[df.team.isin(self.team_names)]
         if df.empty:
@@ -78,12 +79,12 @@ class PlayoffScenarios:
             self.teams.teamid_to_primowner[teamid]
         ]['name']['display']
 
-    def _load_matchups(self) -> list[tuple[str, str]]:
-        probability_teams = {row['team'] for row in self.betting_table}
-        matchups = []
+    def _load_schedule(self) -> dict[int, list[tuple[str, str]]]:
+        schedule = {}
 
         for matchup in self.data.matchups()['schedule']:
-            if matchup['matchupPeriodId'] != self.params.current_week:
+            week = matchup['matchupPeriodId']
+            if not self.params.as_of_week < week <= self.params.regular_season_end:
                 continue
             if 'away' not in matchup:
                 continue
@@ -93,14 +94,32 @@ class PlayoffScenarios:
 
             if home not in self.team_names or away not in self.team_names:
                 continue
-            if home not in probability_teams or away not in probability_teams:
-                continue
+            schedule.setdefault(week, []).append((home, away))
 
-            matchups.append((home, away))
+        return schedule
 
-        return matchups
+    def _scheduled_status(self, standings: list[dict], slots: int,
+                          bootyman: bool = False) -> tuple[list[str], list[str]] | None:
+        # Wins and losses come from SQL as floats, but their sum is a week count.
+        completed = int(max(row['wins'] + row['losses'] for row in standings))
+        names = {row['team'] for row in standings}
+        remaining = []
+        for week in range(completed + 1, self.params.regular_season_end + 1):
+            matchups = self.schedule.get(week, [])
+            participants = [team for matchup in matchups for team in matchup]
+            if set(participants) != names or len(participants) != len(names):
+                return None
+            remaining.extend(matchups)
+        return league_rules.scheduled_postseason_status(
+            standings, remaining, slots, bootyman=bootyman,
+            points_pending=completed > self.params.as_of_week
+        )
 
     def _get_scenarios(self) -> list[dict]:
+        participants = [team for matchup in self.matchups for team in matchup]
+        if set(participants) != set(self.team_names) or len(participants) != len(self.team_names):
+            return []
+
         h2h_outcomes = list(product([0, 1], repeat=len(self.matchups)))
         all_scenarios = []
 
@@ -116,7 +135,7 @@ class PlayoffScenarios:
             week_winners['p'] = self._matchup_weight(week_winners)
             all_scenarios.append(week_winners)
 
-        return [s for s in all_scenarios if s['p'] > 0]
+        return all_scenarios
 
     def _matchup_weight(self, scenario: dict[str, dict]) -> float:
         matchup_prob = 1.0
@@ -136,6 +155,10 @@ class PlayoffScenarios:
         standings = self._sort_standings(standings)
         if not standings:
             return [], []
+
+        scheduled = self._scheduled_status(standings, seed)
+        if scheduled is not None:
+            return scheduled
 
         games_played = standings[0]['wins'] + standings[0]['losses']
         weeks_left = self.params.regular_season_end - games_played
@@ -227,6 +250,10 @@ class PlayoffScenarios:
         standings = self._sort_bootyman_standings(standings)
         if len(standings) < 3:
             return [], []
+
+        scheduled = self._scheduled_status(standings, 2, bootyman=True)
+        if scheduled is not None:
+            return scheduled
 
         games_played = standings[0]['wins'] + standings[0]['losses']
         weeks_left = self.params.regular_season_end - games_played

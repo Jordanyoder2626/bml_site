@@ -132,6 +132,79 @@ def bye_status(records: list[dict], team: str, weeks_left: int,
     return None
 
 
+def scheduled_postseason_status(records: list[dict], matchups: list[tuple[str, str]],
+                                slots: int, bootyman: bool = False,
+                                points_pending: bool = False) -> tuple[list[str], list[str]]:
+    """Return guaranteed and impossible berths over the remaining head-to-head games."""
+    order = order_bootyman_standings if bootyman else order_playoff_standings
+    if not matchups and not points_pending:
+        qualified = {row['team'] for row in order(records)[:slots]}
+        return ([row['team'] for row in records if row['team'] in qualified],
+                [row['team'] for row in records if row['team'] not in qualified])
+
+    names = [row['team'] for row in records]
+    indices = {name: index for index, name in enumerate(names)}
+    games = [(indices[home], indices[away]) for home, away in matchups]
+    initial_wins = [row['wins'] for row in records]
+
+    def can_finish(target: int, qualify: bool) -> bool:
+        wins = initial_wins.copy()
+        undecided = []
+        remaining = [0] * len(names)
+        # For a possible berth, give the target its best outcomes. To look for
+        # any way to miss, give it its worst outcomes. This also fixes its opponents' results.
+        target_wins = qualify != bootyman
+        for home, away in games:
+            if target in (home, away):
+                winner = target if target_wins else (away if home == target else home)
+                wins[winner] += 1
+            else:
+                undecided.append((home, away))
+                remaining[home] += 1
+                remaining[away] += 1
+
+        def reaches_goal(optimistic: bool) -> bool:
+            rivals_win = (optimistic == bootyman) if qualify else (optimistic != bootyman)
+            target_points_high = qualify != bootyman
+            standings = [
+                {'team': name, 'wins': wins[i] + (remaining[i] if rivals_win else 0),
+                 'score': (float('inf') if target_points_high else float('-inf'))
+                 if i == target else 0}
+                for i, name in enumerate(names)
+            ]
+            berth = any(row['team'] == names[target] for row in order(standings)[:slots])
+            return berth == qualify
+
+        def search(game_index: int) -> bool:
+            if not reaches_goal(optimistic=True):
+                return False
+            if reaches_goal(optimistic=False) or game_index == len(undecided):
+                return True
+            home, away = undecided[game_index]
+            remaining[home] -= 1
+            remaining[away] -= 1
+            wins[home] += 1
+            found = search(game_index + 1)
+            wins[home] -= 1
+            if not found:
+                wins[away] += 1
+                found = search(game_index + 1)
+                wins[away] -= 1
+            remaining[home] += 1
+            remaining[away] += 1
+            return found
+
+        return search(0)
+
+    guaranteed, impossible = [], []
+    for i, name in enumerate(names):
+        if not can_finish(i, qualify=True):
+            impossible.append(name)
+        elif not can_finish(i, qualify=False):
+            guaranteed.append(name)
+    return guaranteed, impossible
+
+
 def eliminated_from_postseason(records: list[dict], team: str, weeks_left: int,
                                bootyman: bool = False) -> bool:
     """Test the team's most favorable record/points bound for qualification."""

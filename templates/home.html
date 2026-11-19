@@ -265,80 +265,61 @@
 </section>
 {% endif %}
 
-{% if data_cl %}
-<h1>Clinching Scenarios</h1>
-<div class="tscroll" style="overflow-x:auto;">
-    <table class="table table-hover center content-table home-scenario-table" style="table-layout:auto; width:62.5%">
-        <thead>
-            <tr>
-                {% for header in headings_cl %}
-                    <th>{{ header }}</th>
+{% macro scenario_table(title, rows) %}
+{% if rows %}
+<section class="scenario-section">
+    <h1>{{ title }}</h1>
+    <div class="tscroll">
+        <table class="table table-hover center content-table scenario-table">
+            <thead>
+                <tr>
+                    <th scope="col">Team</th>
+                    <th scope="col">Results needed</th>
+                    <th scope="col">Probability</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <th scope="row">
+                        {{ row.team }}
+                        <span class="scenario-outcome">{{ row.outcome }}</span>
+                    </th>
+                    <td>
+                        {% if row.choices|length > 1 %}
+                            <div class="scenario-choice-label">
+                                {% if row.required %}
+                                <strong>{{ row.required[:1]|upper }}{{ row.required[1:] }}</strong> plus one of these results
+                                {% else %}
+                                {{ 'Either result' if row.choices|length == 2 else 'Any of these results' }}
+                                {% endif %}
+                            </div>
+                            <ul class="scenario-choices">
+                                {% for choice in row.choices %}
+                                <li>{{ choice[:1]|upper }}{{ choice[1:] }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% elif row.required %}
+                        {{ row.required[:1]|upper }}{{ row.required[1:] }}{% if row.choices %} and {{ row.choices[0] }}{% endif %}
+                        {% elif row.choices %}
+                        {{ row.choices[0][:1]|upper }}{{ row.choices[0][1:] }}
+                        {% else %}
+                        Any matchup results
+                        {% endif %}
+                    </td>
+                    <td>{{ row.probability }}</td>
+                </tr>
                 {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-        {% for row in data_cl %}
-            <tr>
-                {% for cell in row %}
-                    <td>{{ cell|safe }}</td>
-                {% endfor %}
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-</div>
-<br>
+            </tbody>
+        </table>
+    </div>
+</section>
 {% endif %}
+{% endmacro %}
 
-{% if data_el %}
-<h1>Elimination Scenarios</h1>
-<div class="tscroll" style="overflow-x:auto;">
-    <table class="table table-hover center content-table home-scenario-table" style="table-layout:auto; width:62.5%">
-        <thead>
-            <tr>
-                {% for header in headings_el %}
-                    <th>{{ header }}</th>
-                {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-        {% for row in data_el %}
-            <tr>
-                {% for cell in row %}
-                    <td>{{ cell|safe }}</td>
-                {% endfor %}
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-</div>
-<br>
-{% endif %}
-
-{% if data_bb %}
-<h1>Bootyman Bowl Scenarios</h1>
-<div class="tscroll" style="overflow-x:auto;">
-    <table class="table table-hover center content-table home-scenario-table" style="table-layout:auto; width:62.5%">
-        <thead>
-            <tr>
-                {% for header in headings_bb %}
-                    <th>{{ header }}</th>
-                {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-        {% for row in data_bb %}
-            <tr>
-                {% for cell in row %}
-                    <td>{{ cell|safe }}</td>
-                {% endfor %}
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-</div>
-<br>
-{% endif %}
+{{ scenario_table('Clinching Scenarios', data_cl) }}
+{{ scenario_table('Elimination Scenarios', data_el) }}
+{{ scenario_table('Bootyman Bowl Scenarios', data_bb) }}
 
 <h1>{% if is_playoff_week %}Final Standings{% else %}Current Standings{% endif %}</h1>
 <div class="tscroll" style="overflow-x:auto;">

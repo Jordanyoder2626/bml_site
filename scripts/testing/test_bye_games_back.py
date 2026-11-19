@@ -53,6 +53,33 @@ class ByeGamesBackTests(unittest.TestCase):
                    for row in self.records]
         self.assertEqual(league_rules.bye_status(records, 'Caden', 2), 'c')
 
+    def test_rivals_cannot_both_win_their_head_to_head_game(self):
+        records = [
+            {'team': team, 'wins': wins, 'score': 1000}
+            for team, wins in [
+                ('Tripp', 8), ('Chase', 8), ('Quinn', 8), ('Caden', 6),
+                ('Cade', 5), ('Landry', 5),
+            ]
+        ]
+        matchups = [('Tripp', 'Chase'), ('Quinn', 'Caden'), ('Cade', 'Landry')]
+        clinched, eliminated = league_rules.scheduled_postseason_status(records, matchups, 5)
+        self.assertIn('Caden', clinched)
+        self.assertNotIn('Cade', eliminated)
+        self.assertNotIn('Landry', eliminated)
+
+    def test_projected_final_result_leaves_points_tiebreaker_open(self):
+        clinched, eliminated = league_rules.scheduled_postseason_status(
+            self.records, [], 1, points_pending=True
+        )
+        self.assertIn('Tripp', clinched)
+        self.assertIn('Caden', eliminated)
+        tied = [dict(row, wins=9) if row['team'] == 'Chase' else row for row in self.records]
+        clinched, eliminated = league_rules.scheduled_postseason_status(
+            tied, [], 1, points_pending=True
+        )
+        self.assertNotIn('Chase', clinched)
+        self.assertNotIn('Chase', eliminated)
+
 
 if __name__ == '__main__':
     unittest.main()
