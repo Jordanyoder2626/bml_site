@@ -1,4 +1,5 @@
 import json
+from html import escape
 from pathlib import Path
 from datetime import datetime as dt
 
@@ -381,6 +382,37 @@ def format_scenario_statements(rows: list[list], scenario_type: str) -> list[lis
         formatted_rows.append([statement, probability])
 
     return formatted_rows
+
+
+def format_bye_eliminations(bye_scenarios: dict, matchups: list[tuple[str, str]],
+                            final_week: bool) -> list[list]:
+    rows = []
+    for team, result in sorted(bye_scenarios.items()):
+        outcomes = result['elim_scenarios']
+        probability = format_prob(result['p_elim'])
+        if not outcomes or not matchups or not _visible_probability(probability):
+            continue
+
+        outcome_items = []
+        for outcome in outcomes:
+            wins = outcome['matchup']
+            winners = [
+                escape(display_team_name(home if wins[home] else away))
+                for home, away in matchups
+            ]
+            outcome_items.append(f'<li>{", ".join(winners)}</li>')
+
+        display_team = display_team_name(team)
+        verb = _team_verb(display_team, 'is', 'are')
+        summary = f'{escape(display_team)} {verb} eliminated from a bye with any listed set of winners'
+        if final_week:
+            summary += ' based on current points tiebreakers'
+        statement = (
+            f'<details><summary>{summary}.</summary>'
+            f'<ul>{"".join(outcome_items)}</ul></details>'
+        )
+        rows.append([statement, probability])
+    return rows
 
 
 def format_bootyman_scenario_statements(rows: list[list]) -> list[list]:
@@ -791,18 +823,8 @@ for s in clinches['clinches']:
         s.extend([prob])
 
 for s in clinches['eliminations']:
-    if s[1] == 'Bye':
-        try:
-            prob = format_prob(bye_scens[s[0]]['p_elim'])
-        except KeyError:
-            prob = f'0.0%'
-        s.extend([prob])
-    else:
-        try:
-            prob = format_prob(playoff_scens[s[0]]['p_elim'])
-        except KeyError:
-            prob = f'0.0%'
-        s.extend([prob])
+    prob = format_prob(playoff_scens.get(s[0], {}).get('p_elim', 0))
+    s.append(prob)
 # TODO: fix last week clinches/elims. for wild card, net wins and probability should be blank (or save all sims to get prob of team getting outscored by x pts)
 
 for s in clinches['bootyman']:
@@ -825,6 +847,11 @@ clinches['eliminations'] = format_scenario_statements(
     clinches['eliminations'],
     scenario_type='eliminate'
 )
+clinches['eliminations'].extend(format_bye_eliminations(
+    bye_scens,
+    ps.matchups,
+    final_week=params.current_week == params.regular_season_end
+))
 clinches['bootyman'] = format_bootyman_scenario_statements(
     clinches['bootyman']
 )

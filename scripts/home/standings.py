@@ -236,7 +236,7 @@ class Standings:
                         team_name: str,
                         seed: int) -> list[Any]:
 
-        elim_type = 'Bye' if seed == 3 else 'Playoffs'
+        elim_type = 'Playoffs'
 
         clinch_weeks_left = (
             self.params.regular_season_end - self.week
@@ -258,7 +258,7 @@ class Standings:
         if not data_matches:
             return []
         data_tm = data_matches[0]
-        wb_column = 'wb2' if seed == 3 else f'wb{seed}'
+        wb_column = f'wb{seed}'
 
         clinched = True if data_tm[wb_column] == -99 else False
         eliminated = True if data_tm[wb_column] == 99 else False
@@ -332,9 +332,6 @@ class Standings:
                     seed_wins = team_to_clear['overall_wins']
 
                     for wins in range(-1, 2):
-                        if seed == 3 and wins >= 0:
-                            continue
-
                         new_wb = (
                             (data_tm['overall_wins'] - seed_wins)
                             + wins
@@ -856,11 +853,6 @@ class Standings:
                 seed=3
             )
 
-            bye_elims = self._elim_scenarios(
-                team_name=tm,
-                seed=3
-            )
-
             playoffs_clinches = self._clinch_scenarios(
                 team_name=tm,
                 seed=5
@@ -884,10 +876,6 @@ class Standings:
             if bye_clinches:
                 for bc_row in bye_clinches:
                     clinch_rows.append(bc_row)
-
-            if bye_elims:
-                for be_row in bye_elims:
-                    elim_rows.append(be_row)
 
             if playoffs_clinches:
                 for pc_row in playoffs_clinches:
