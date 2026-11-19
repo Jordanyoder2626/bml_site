@@ -255,6 +255,80 @@ html {
   width: 120px;
 }
 
+.scenario-section {
+  margin-bottom: 1.75rem;
+}
+
+.scenario-section .tscroll {
+  overflow-x: auto;
+}
+
+.content-table.scenario-table {
+  width: min(94%, 58rem);
+  margin: 0 auto;
+  white-space: normal;
+}
+
+.scenario-table th,
+.scenario-table td {
+  text-align: left;
+}
+
+.scenario-table tbody th,
+.scenario-table tbody td {
+  padding: .65rem .8rem;
+  vertical-align: top;
+}
+
+.scenario-table tbody th {
+  width: 24%;
+}
+
+.content-table.scenario-table td:nth-child(2) {
+  border-left: 0;
+}
+
+.scenario-outcome {
+  display: block;
+  margin-top: .15rem;
+  font-size: .85em;
+  font-weight: 400;
+  color: #48535c;
+}
+
+.scenario-table th:last-child,
+.scenario-table td:last-child {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.scenario-table tbody td:last-child {
+  font-weight: 600;
+}
+
+.scenario-choice-label {
+  color: #48535c;
+  font-size: .85em;
+}
+
+.scenario-choice-label strong {
+  color: #1b252d;
+}
+
+.scenario-choices {
+  margin: .2rem 0 0;
+  padding-inline-start: 1.1em;
+}
+
+.scenario-choices li + li {
+  margin-top: .1rem;
+}
+
+.scenario-choices li::marker {
+  color: #67767d;
+}
+
 .winning-score {
   color: #0EB04B;
   font-weight: 800;
