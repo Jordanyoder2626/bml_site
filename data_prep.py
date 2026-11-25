@@ -462,7 +462,7 @@ season_sim_table = (
     .sort_values('created')
     .tail(n_teams)  # most recent db updates
 )
-season_sim_wins_table = Database(table='season_sim_wins', season=season, week=the_week).retrieve_data(how='week')
+season_sim_wins_table = Database(table='season_sim_wins', season=season, week=params.current_week).retrieve_data(how='week')
 season_sim_ranks_table = Database(table='season_sim_ranks', season=season, week=the_week).retrieve_data(how='week')
 h2h_data = Database(table='h2h', season=season, week=completed_week).retrieve_data(how='season')
 ss_data = Database(table='schedule_switcher', season=season, week=completed_week).retrieve_data(how='season')
